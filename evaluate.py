@@ -10,6 +10,13 @@ import numpy as np
 import pdb
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
+import argparse
+
+def get_args_parser():
+    parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
+    parser.add_argument("--config", default="/config/config.yaml", type=str)
+
+    return parser
 
 def evaluate(config, model, testing_loader):
     model.eval()
@@ -33,9 +40,11 @@ def evaluate(config, model, testing_loader):
 
 if __name__ == "__main__":
     weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
-
+    parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
+    args = parser.parse_args()
+    
     # load yaml file
-    with open("config.yaml", 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
     list_transforms = []

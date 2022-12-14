@@ -11,11 +11,18 @@ import time
 import wandb
 from pathlib import Path
 import numpy as np
-from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss
+from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss, FocalLoss
 from metrics import all_dice_scores, epoch_time
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
+import argparse
 
+def get_args_parser():
+    parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
+    
+    parser.add_argument("--config", default="/config/config.yaml", type=str)
+
+    return parser
 
 def train(config, model, training_loader, optimizer, criterion):
     epoch_loss = 0
@@ -107,8 +114,11 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         )
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser("Pneumothorax training script", parents=[get_args_parser()])
+    args = parser.parse_args()
+    
     # load yaml file
-    with open("config.yaml", 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
 
     list_transforms = []
@@ -122,7 +132,7 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=transform)
+    training_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
     testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
     
     training_loader = DataLoader(training_data, batch_size=config['batch_size'], shuffle=True)
