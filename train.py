@@ -154,7 +154,10 @@ if __name__ == "__main__":
     elif config['loss_function'] == 'DiceBCELoss':
         criterion = DiceBCELoss()
 
-    model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    if config['backbone'] == "resnet34":
+        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    elif config['backbone'] == "efficientnet-b4":
+        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
         
     if config['optimizer'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])

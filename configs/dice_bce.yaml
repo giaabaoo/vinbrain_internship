@@ -7,7 +7,7 @@ image_height: 512
 image_width: 512
 
 batch_size: 8
-loss_function: "MixedLoss"
+loss_function: "DiceBCELoss"
 optimizer: "Adam"
 learning_rate: 0.0005
 scheduler: 'ReduceLROnPlateau'
@@ -20,4 +20,4 @@ num_epochs: 10
 device: 'cuda'
 save_path: "./checkpoints"
 continue_training: False
-continue_training_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/code/checkpoints/model-ckpt-best-mixed.pt"
+continue_training_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/code/checkpoints/model-ckpt-best-dicebce.pt"
