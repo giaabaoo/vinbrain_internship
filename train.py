@@ -16,6 +16,7 @@ from metrics import all_dice_scores, epoch_time
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
 import argparse
+import pdb
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
@@ -91,11 +92,12 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             Path("./checkpoints/").mkdir(parents=True, exist_ok=True)
+            pdb.set_trace()
             torch.save({'epoch': epoch, 
                         'model_state_dict': model.state_dict(), 
                         'optimizer_state_dict': optimizer.state_dict(),
                         'loss': best_valid_loss,
-                        }, os.path.join(config['save_path'], "model-ckpt-best.pt"))
+                        }, config['save_checkpoint'])
 
         end_time = time.monotonic()
 
@@ -129,7 +131,7 @@ if __name__ == "__main__":
             ToTensorV2(),
         ]
     )
-
+    
     transform = Compose(list_transforms)
     
     training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=transform)

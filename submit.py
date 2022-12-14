@@ -73,7 +73,7 @@ def post_process(probability, threshold, min_size):
     return predictions, num
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
+    
 
     parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
     args = parser.parse_args()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
     elif config['backbone'] == "efficientnet-b4":
         model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
-    
+    weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
     sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/annotations/stage_2_sample_submission.csv"
@@ -121,4 +121,5 @@ if __name__ == "__main__":
                 r = mask2rle(predict, 1024, 1024)
                 encoded_pixels.append(r)
     df['EncodedPixels'] = encoded_pixels
+    
     df.to_csv('submission.csv', columns=['ImageId', 'EncodedPixels'], index=False)

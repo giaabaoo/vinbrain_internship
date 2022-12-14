@@ -20,4 +20,4 @@ num_epochs: 10
 device: 'cuda'
 save_path: "./checkpoints"
 continue_training: False
-continue_training_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/code/checkpoints/model-ckpt-best-dicebce.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best-dicebce.pt"

@@ -10,9 +10,7 @@ def epoch_time(start_time, end_time):
     
 def all_dice_scores(predictions, labels, threshold=0.5):
     batch_size = len(labels)
-    
-    # pdb.set_trace()
-    
+        
     predictions = torch.sigmoid(predictions)
     
     predictions = predictions.view(batch_size, -1)

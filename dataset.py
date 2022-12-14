@@ -105,8 +105,12 @@ class EvalPneumothorax(Dataset):
         
         augmented = self.transform(image=image)
         image = augmented['image']
-        all_masks = all_masks.unsqueeze(0)
         
+        test_transform = Compose([
+            ToTensorV2(),
+        ])
+        augmented_mask = test_transform(image=all_masks)
+        all_masks = augmented_mask['image']
         
         sample = {'image': image, 'mask': all_masks}
         

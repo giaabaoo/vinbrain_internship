@@ -42,14 +42,17 @@ def evaluate(config, model, testing_loader):
             images, labels = images.to(config['device']), labels.to(config['device'])
             
             predictions = model(images)
-            pdb.set_trace()
-            predictions = predictions.detach().cpu().numpy()[:, 0, :, :]
+            # pdb.set_trace()
+            # pdb.set_trace()
+            predictions = predictions.detach().cpu().numpy()[:, 0, :, :] # bs x 1 x width x height --> bs x width x height
             predictions_resize = []
             for prediction in predictions:
                 if prediction.shape != (1024, 1024):
                     prediction = cv2.resize(prediction, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
                 predictions_resize.append(prediction)
+            predictions_resize = torch.from_numpy(np.array(predictions_resize)).unsqueeze(1).to(config['device'])
             
+            # pdb.set_trace()
             dice, dice_neg, dice_pos = all_dice_scores(predictions_resize, labels, 0.5)
             
             dices.extend(dice.cpu().numpy().tolist())
@@ -57,6 +60,7 @@ def evaluate(config, model, testing_loader):
             positive_dices.extend(dice_pos.cpu().numpy().tolist())
         
     return np.mean(dices), np.mean(negative_dices), np.mean(positive_dices)
+
 
 if __name__ == "__main__":
     weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
@@ -77,6 +81,7 @@ if __name__ == "__main__":
     )
 
     transform = Compose(list_transforms)
+   
     testing_data = EvalPneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)    
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
