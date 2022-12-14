@@ -2,6 +2,7 @@
 
 ## TODO TASKS:
 - Experiment on other losses
+- Experiment on other architectures
 - Data augmentation
 - Final evaluation on full size image
 
@@ -29,5 +30,5 @@ Weighted focal loss | Trained on full dataset | 0.774 |
 - Submission module
 
 #### 3. Others
-- Experiments on focal loss with resample and full dataset
+- Experiments on focal loss with resampled and full dataset
 - Investigating model low performance

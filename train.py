@@ -11,7 +11,7 @@ import time
 import wandb
 from pathlib import Path
 import numpy as np
-from loss import MixedLoss, WeightedFocalLoss
+from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss
 from metrics import all_dice_scores, epoch_time
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
@@ -133,14 +133,16 @@ if __name__ == "__main__":
     # print(images.shape, masks.shape)
     
     # define loss function
-    if config['loss_function'] == 'CrossEntropy':
-        criterion = nn.CrossEntropyLoss()
-    elif config['loss_function'] == 'DiceLoss':
-        criterion = None # will assign later
+    if config['loss_function'] == 'DiceLoss':
+        criterion = DiceLoss() # will assign later
     elif config['loss_function'] == 'MixedLoss':
-        criterion = MixedLoss(10.0, 2.0)
+        criterion = MixedLoss(10.0, 2.0) # alpha * Focal + DiceLoss
+    elif config['loss_function'] == 'FocalLoss':
+        criterion = FocalLoss(2.0)
     elif config['loss_function'] == 'WeightedFocalLoss':
         criterion = WeightedFocalLoss(10.0, 2.0)
+    elif config['loss_function'] == 'DiceBCELoss':
+        criterion = DiceBCELoss()
 
     model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
         
