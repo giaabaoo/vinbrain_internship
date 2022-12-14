@@ -34,7 +34,4 @@ def all_dice_scores(predictions, labels, threshold=0.5):
     dice_pos = dice_pos[pos_index]
     dice = torch.cat([dice_pos, dice_neg])
 
-    num_neg = len(neg_index)
-    num_pos = len(pos_index)
-
     return dice, dice_neg, dice_pos

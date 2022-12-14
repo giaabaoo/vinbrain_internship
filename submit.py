@@ -21,6 +21,13 @@ import pdb
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
 from utils.mask_functions import mask2rle
+import argparse
+
+def get_args_parser():
+    parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
+    parser.add_argument("--config", default="./configs/config.yaml", type=str)
+
+    return parser
 
 class TestDataset(Dataset):
     def __init__(self, root_image_path, transform=None):
@@ -68,8 +75,10 @@ def post_process(probability, threshold, min_size):
 if __name__ == "__main__":
     weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
 
+    parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
+    args = parser.parse_args()
     # load yaml file
-    with open("config.yaml", 'r') as f:
+    with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
     list_transforms = []
@@ -87,7 +96,10 @@ if __name__ == "__main__":
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
     
-    model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    if config['backbone'] == "resnet34":
+        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    elif config['backbone'] == "efficientnet-b4":
+        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
     
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
@@ -102,6 +114,7 @@ if __name__ == "__main__":
             if probability.shape != (1024, 1024):
                 probability = cv2.resize(probability, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
             predict, num_predict = post_process(probability, 0.5, 3500)
+            
             if num_predict == 0:
                 encoded_pixels.append('-1')
             else:

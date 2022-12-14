@@ -67,6 +67,50 @@ class Pneumothorax(Dataset):
         blend_image = cv2.addWeighted(image, ALPHA, mask, BETA, 0.0)
         
         return blend_image
+
+class EvalPneumothorax(Dataset):
+    def __init__(self, root_image_path, root_label_path, transform=None):
+        self.root_image_path = root_image_path
+        self.root_label_path = root_label_path
+        self.transform = transform
+        
+        with open(self.root_label_path, 'r') as f:
+            self.data = json.load(f)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        with open(self.root_label_path, 'r') as f:
+            self.data = json.load(f)
+            
+        data_keys = list(self.data.keys())
+        image_id = data_keys[idx]
+        
+        image_path = os.path.join(self.root_image_path, "{}.png".format(image_id))
+        # PIL
+        image = cv2.imread(image_path)
+        height, width, _ = image.shape
+        
+        all_masks = np.zeros((height, width))
+        if self.data[image_id][0] != "-1":
+            # check = True
+            for annotation in self.data[image_id]:
+                mask = rle2mask(annotation, width, height)
+                all_masks += mask    
+        
+        # convert 0-255 to 0-1
+        all_masks = all_masks / 255.0
+        all_masks = (all_masks >= 1.0).astype('float32') # for overlap cases
+        
+        augmented = self.transform(image=image)
+        image = augmented['image']
+        all_masks = all_masks.unsqueeze(0)
+        
+        
+        sample = {'image': image, 'mask': all_masks}
+        
+        return sample
     
 if __name__ == "__main__":
     root_image_path = "../dataset/pngs/balanced_images/test"

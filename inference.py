@@ -17,7 +17,7 @@ import argparse
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
-    parser.add_argument("--config", default="/config/config.yaml", type=str)
+    parser.add_argument("--config", default="./configs/config.yaml", type=str)
 
     return parser
 
@@ -59,7 +59,11 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    if config['backbone'] == "resnet34":
+        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
+    elif config['backbone'] == "efficientnet-b4":
+        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
+        
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
                 
