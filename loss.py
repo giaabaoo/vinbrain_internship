@@ -52,3 +52,20 @@ class MixedLoss(nn.Module):
         loss = self.alpha*self.focal(input, target) - torch.log(dice_loss(input, target))
         # loss = torch.log(dice_loss(input, target))
         return loss.mean()
+    
+
+NUM_CLASS = 2
+class ActiveContourLoss(nn.Module):
+    def __init__(self, class_weight=[1] * NUM_CLASS):
+        """
+        class weight should be a list. 
+        """
+        super().__init__()
+        self.class_weight = torch.tensor(class_weight)
+    def forward(self, y_true, y_pred):   
+        yTrueOnehot = torch.zeros(y_true.size(0), NUM_CLASS, y_true.size(2), y_true.size(3))
+        yTrueOnehot = torch.scatter(yTrueOnehot, 1, y_true, 1)
+
+        active = torch.sum(yTrueOnehot * (1 - y_pred) + (1 - yTrueOnehot) * y_pred, dim=[2, 3])
+        loss = torch.sum(active * self.class_weight)
+        return loss / (torch.sum(self.class_weight) * y_true.size(0) * y_true.size(2) * y_true.size(3))

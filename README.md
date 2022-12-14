@@ -3,6 +3,15 @@
 ## TODO TASKS:
 - Experiment on other losses
 - Data augmentation
+- Final evaluation on full size image
+
+## Results table
+#### Unet + pre-trained ResNet34
+Loss functions | Weighted focal loss | Weighted focal loss |
+--- | --- | --- |
+Notes | Trained on re-sampled dataset | Trained on full dataset |
+--- | --- | --- |
+Dice score on private test | 0.5328 | 0.774 |
 
 ## DONE:
 #### 1. Prepare data
@@ -23,4 +32,3 @@
 #### 3. Others
 - Experiments on focal loss with resample and full dataset
 - Investigating model low performance
-- Final evaluation on full size image
