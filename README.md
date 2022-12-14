@@ -8,7 +8,7 @@
 ## Results table
 #### Unet + pre-trained ResNet34
 Loss functions | Notes | Dice score on private test |
---- | --- | --- |
+--- | --- | :---: |
 Weighted focal loss | Trained on re-sampled dataset |  0.5328 |
 Weighted focal loss | Trained on full dataset | 0.774 |
 
