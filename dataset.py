@@ -5,6 +5,8 @@ import json
 import cv2
 import numpy as np
 import torchvision.transforms as transforms
+from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations.pytorch import ToTensorV2
 
 import os
 import pdb
@@ -37,21 +39,21 @@ class Pneumothorax(Dataset):
         height, width, _ = image.shape
         
         all_masks = np.zeros((height, width))
-        
-        # check = False
-        
         if self.data[image_id][0] != "-1":
             # check = True
             for annotation in self.data[image_id]:
                 mask = rle2mask(annotation, width, height)
                 all_masks += mask    
-                
-        if self.transform:
-            image = Image.fromarray(image)
-            image = self.transform(image)
-            all_masks = Image.fromarray(all_masks)
-            all_masks = self.transform(all_masks)
-
+        
+        # convert 0-255 to 0-1
+        all_masks = all_masks / 255.0
+        all_masks = (all_masks >= 1.0).astype('float32') # for overlap cases
+        
+        augmented = self.transform(image=image, mask=all_masks)
+        image = augmented['image']
+        all_masks = augmented['mask'].unsqueeze(0)
+        
+        
         sample = {'image': image, 'mask': all_masks}
         
         return sample
@@ -65,22 +67,22 @@ class Pneumothorax(Dataset):
         blend_image = cv2.addWeighted(image, ALPHA, mask, BETA, 0.0)
         
         return blend_image
-        
+    
 if __name__ == "__main__":
-    root_image_path = "../dataset/pngs/original_images/test"
+    root_image_path = "../dataset/pngs/balanced_images/test"
     root_label_path = "../dataset/annotations/test.json"
-    transform = transforms.Compose([
-        transforms.Resize((512, 512)),
-        transforms.ToTensor()
-    ])
+    list_transforms = []
+    list_transforms.extend(
+        [
+            Resize(1024, 1024),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            ToTensorV2(),
+        ]
+    )
+
+    transform = Compose(list_transforms)
     dataloader = Pneumothorax(root_image_path, root_label_path, transform=transform)
     
     for idx in  range(len(dataloader)):
         data_dict = dataloader[idx]
         image, mask = data_dict['image'], data_dict['mask']
-        
-        # if check:
-        #     visualize_image = dataloader.visualize(idx)
-        #     cv2.imwrite("{}_test_dataloader.png".format(image_id), visualize_image)
-        #     pdb.set_trace()
-        #     print(image_id)

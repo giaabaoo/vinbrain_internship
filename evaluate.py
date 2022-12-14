@@ -8,6 +8,8 @@ from tqdm import tqdm
 from metrics import all_dice_scores
 import numpy as np
 import pdb
+from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations.pytorch import ToTensorV2
 
 def evaluate(config, model, testing_loader):
     model.eval()
@@ -17,7 +19,6 @@ def evaluate(config, model, testing_loader):
     with torch.no_grad():
         for sample in tqdm(testing_loader, desc="Evaluating", leave=False):
             images, labels = sample['image'], sample['mask']
-            images = images.type(torch.FloatTensor)
             images, labels = images.to(config['device']), labels.to(config['device'])
             
             predictions = model(images)
@@ -28,21 +29,25 @@ def evaluate(config, model, testing_loader):
             positive_dices.extend(dice_pos.cpu().numpy().tolist())
           
         
-    pdb.set_trace()
     return np.mean(dices), np.mean(negative_dices), np.mean(positive_dices)
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/code/checkpoints/model-ckpt-best.pt"
+    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
 
     # load yaml file
     with open("config.yaml", 'r') as f:
         config = yaml.safe_load(f)
-        
-    transform = transforms.Compose([
-        transforms.Resize((config['image_height'], config['image_width'])),
-        # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        transforms.ToTensor()
-    ])
+    
+    list_transforms = []
+    list_transforms.extend(
+        [
+            Resize(config['image_height'], config['image_width']),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            ToTensorV2(),
+        ]
+    )
+
+    transform = Compose(list_transforms)
     testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)    
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)

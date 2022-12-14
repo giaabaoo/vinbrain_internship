@@ -1,27 +1,20 @@
 import os
 from dataset import Pneumothorax
-# from model import UNet
-from unet import Unet
 import segmentation_models_pytorch as smp
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch import nn, optim
 import torch
 import yaml
-import torch.nn.functional as F
-import torchvision.models as models
 from torchsummary import summary
-from torch.nn.functional import cross_entropy
-# import albumentations as A
-import pdb
 from tqdm import tqdm
 import time
 import wandb
 from pathlib import Path
 import numpy as np
-from loss import MixedLoss, dice_loss
+from loss import MixedLoss, WeightedFocalLoss
 from metrics import all_dice_scores, epoch_time
-
+from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations.pytorch import ToTensorV2
 
 
 def train(config, model, training_loader, optimizer, criterion):
@@ -32,12 +25,11 @@ def train(config, model, training_loader, optimizer, criterion):
 
     for sample in tqdm(training_loader, desc="Training", leave=False):
         images, labels = sample['image'], sample['mask']
-        images = images.type(torch.FloatTensor)
         images, labels = images.to(config['device']), labels.to(config['device'])
         
         optimizer.zero_grad()
         predictions = model(images)  # forward
-    
+
         loss = criterion(predictions, labels)
         dice, dice_neg, dice_pos = all_dice_scores(predictions, labels, 0.5)
         loss.backward()  # backward
@@ -50,8 +42,6 @@ def train(config, model, training_loader, optimizer, criterion):
         epoch_loss += loss.item()
         
     
-
-    # print(loss_hist)
     return epoch_loss / len(training_loader), np.mean(dices), np.mean(negative_dices), np.mean(positive_dices)
 
 
@@ -65,11 +55,10 @@ def evaluate(config, model, validation_loader, criterion):
     with torch.no_grad():
         for sample in tqdm(validation_loader, desc="Evaluating", leave=False):
             images, labels = sample['image'], sample['mask']
-            images = images.type(torch.FloatTensor)
             images, labels = images.to(config['device']), labels.to(config['device'])
             
             predictions = model(images)
-          
+            
             loss = criterion(predictions, labels)
             
             dice, dice_neg, dice_pos = all_dice_scores(predictions, labels, 0.5)
@@ -121,12 +110,17 @@ if __name__ == "__main__":
     # load yaml file
     with open("config.yaml", 'r') as f:
         config = yaml.safe_load(f)
-        
-    transform = transforms.Compose([
-        transforms.Resize((config['image_height'], config['image_width'])),
-        # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        transforms.ToTensor()
-    ])
+
+    list_transforms = []
+    list_transforms.extend(
+        [
+            Resize(config['image_height'], config['image_width']),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            ToTensorV2(),
+        ]
+    )
+
+    transform = Compose(list_transforms)
     
     training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=transform)
     testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
@@ -145,13 +139,9 @@ if __name__ == "__main__":
         criterion = None # will assign later
     elif config['loss_function'] == 'MixedLoss':
         criterion = MixedLoss(10.0, 2.0)
-        # criterion = dice_loss()
+    elif config['loss_function'] == 'WeightedFocalLoss':
+        criterion = WeightedFocalLoss(10.0, 2.0)
 
-    # model and optimizer
-    # model_ft = models.resnet50(weights=True)
-    # model_ft.conv1 = nn.Conv2d(1, 64, kernel_size=(3, 3), stride=(2, 2), padding=(3, 3), bias=False)
-    
-    # model = Unet(model_ft)
     model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
         
     if config['optimizer'] == 'Adam':
@@ -167,20 +157,12 @@ if __name__ == "__main__":
     if config['continue_training']:
         model.load_state_dict(torch.load(config['continue_training_path'])['model_state_dict'])
         epoch = torch.load(config['continue_training_path'])['epoch']
-        # optimizer.load_state_dict(torch.load(config['continue_training_path'])['optimizer_state_dict'])
     else:
         epoch = 0
     
     model.to(config['device'])
     wandb.init(project="pneumothorax", entity="_giaabaoo_", config=config)
-    # pdb.set_trace()
-    # wandb.config = config
     wandb.watch(model)
-
-    # for i, child in enumerate(model.children()):
-    #     if i <= 7:
-    #         for param in child.parameters():
-    #             param.requires_grad = False
                 
     print(summary(model,input_size=(3,512,512))) 
     

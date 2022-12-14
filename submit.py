@@ -18,6 +18,9 @@ from tqdm import tqdm
 from pydicom.pixel_data_handlers.util import apply_voi_lut
 import segmentation_models_pytorch as smp
 import pdb
+from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations.pytorch import ToTensorV2
+from utils.mask_functions import mask2rle
 
 class TestDataset(Dataset):
     def __init__(self, root_image_path, transform=None):
@@ -33,11 +36,9 @@ class TestDataset(Dataset):
         image_path = os.path.join(self.root_image_path, self.paths[idx])
         image = self.process_dicom(image_path)
         image = np.repeat(image[..., np.newaxis], 3, axis=-1).astype(np.uint8)        
-        # pdb.set_trace()
-        
-        if self.transform:
-            image = Image.fromarray(image)
-            image = self.transform(image)
+      
+        augmented = self.transform(image=image)
+        image = augmented['image']
         
         return image
 
@@ -51,34 +52,6 @@ class TestDataset(Dataset):
             data = np.amax(data) - data
                 
         return data
-    
-def run_length_decode(rle, height=1024, width=1024, fill_value=1):
-    component = np.zeros((height, width), np.float32)
-    component = component.reshape(-1)
-    rle = np.array([int(s) for s in rle.strip().split(' ')])
-    rle = rle.reshape(-1, 2)
-    start = 0
-    for index, length in rle:
-        start = start+index
-        end = start+length
-        component[start: end] = fill_value
-        start = end
-    component = component.reshape(width, height).T
-    return component
-
-def run_length_encode(component):
-    component = component.T.flatten()
-    start = np.where(component[1:] > component[:-1])[0]+1
-    end = np.where(component[:-1] > component[1:])[0]+1
-    length = end-start
-    rle = []
-    for i in range(len(length)):
-        if i == 0:
-            rle.extend([start[0], length[0]])
-        else:
-            rle.extend([start[i]-end[i-1], length[i]])
-    rle = ' '.join([str(r) for r in rle])
-    return rle
 
 def post_process(probability, threshold, min_size):
     mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
@@ -93,17 +66,23 @@ def post_process(probability, threshold, min_size):
     return predictions, num
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/code/checkpoints/model-ckpt-best.pt"
+    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
 
     # load yaml file
     with open("config.yaml", 'r') as f:
         config = yaml.safe_load(f)
-        
-    transform = transforms.Compose([
-        transforms.Resize((config['image_height'], config['image_width'])),
-        # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-        transforms.ToTensor()
-    ])
+    
+    list_transforms = []
+    list_transforms.extend(
+        [
+            Resize(config['image_height'], config['image_width']),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            ToTensorV2(),
+        ]
+    )
+
+    transform = Compose(list_transforms)
+    
     testing_data = TestDataset("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_images", transform=transform)    
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
@@ -126,7 +105,7 @@ if __name__ == "__main__":
             if num_predict == 0:
                 encoded_pixels.append('-1')
             else:
-                r = run_length_encode(predict)
+                r = mask2rle(predict, 1024, 1024)
                 encoded_pixels.append(r)
     df['EncodedPixels'] = encoded_pixels
     df.to_csv('submission.csv', columns=['ImageId', 'EncodedPixels'], index=False)
