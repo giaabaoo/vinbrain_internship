@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    training_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
+    training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=transform)
     testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
     
     training_loader = DataLoader(training_data, batch_size=config['batch_size'], shuffle=True)
