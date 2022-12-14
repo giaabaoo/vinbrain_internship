@@ -11,7 +11,7 @@ import time
 import wandb
 from pathlib import Path
 import numpy as np
-from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss
+from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss, FocalLoss
 from metrics import all_dice_scores, epoch_time
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2

@@ -7,7 +7,7 @@
 - Final evaluation on full size image
 
 ## Results table
-#### Unet + pre-trained ResNet34
+#### U-Net + pre-trained ResNet34 (10 epochs)
 Loss functions | Notes | Dice score on private test |
 --- | --- | :---: |
 Weighted focal loss | Trained on re-sampled dataset |  0.5328 |
