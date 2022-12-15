@@ -68,7 +68,7 @@ if __name__ == "__main__":
     model.to(config['device'])
                 
     ### Inference on image
-    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/pngs/original_images/test/1.2.276.0.7230010.3.1.4.8323329.352.1517875162.525205.png"
+    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/pngs/original_images/train/1.2.276.0.7230010.3.1.4.8323329.300.1517875162.258081.png"
     image = cv2.imread(image_path)
     # image = Image.fromarray(image)
 

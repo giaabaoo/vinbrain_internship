@@ -1,0 +1,23 @@
+root_train_image_path: "../dataset/pngs/balanced_images/train"
+root_train_label_path: "../dataset/annotations/resample/train.json"
+root_test_image_path: "../dataset/pngs/balanced_images/test"
+root_test_label_path: "../dataset/annotations/resample/test.json"
+
+image_height: 512
+image_width: 512
+
+batch_size: 8
+loss_function: "MixedLoss"
+optimizer: "Adam"
+learning_rate: 0.001
+scheduler: 'ReduceLROnPlateau'
+step_size: 30
+gamma: 0.1
+backbone: "efficientnet-b4"
+
+
+num_epochs: 10
+device: 'cuda'
+save_path: "./checkpoints"
+continue_training: False
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best-resample.pt"

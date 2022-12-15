@@ -31,6 +31,7 @@ def post_process(probability, threshold, min_size):
             num += 1
     return predictions, num
 
+
 def evaluate(config, model, testing_loader):
     model.eval()
     
@@ -40,19 +41,31 @@ def evaluate(config, model, testing_loader):
         for sample in tqdm(testing_loader, desc="Evaluating", leave=False):
             images, labels = sample['image'], sample['mask']
             images, labels = images.to(config['device']), labels.to(config['device'])
-            
             predictions = model(images)
             # pdb.set_trace()
             # pdb.set_trace()
             predictions = predictions.detach().cpu().numpy()[:, 0, :, :] # bs x 1 x width x height --> bs x width x height
+            
+            # for pred in predictions:
+            #     mask = cv2.threshold(pred, 0.2, 1, cv2.THRESH_BINARY)[1]
+            #     num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
+            #     num = 0
+            #     for c in range(1, num_component):
+            #         p = (component == c)
+            #         if p.sum() > 3500:
+            #             num += 1
+            #     if num >= 1:
+            #         pdb.set_trace()
+            
+            
             predictions_resize = []
-            for prediction in predictions:
+            for idx, prediction in enumerate(predictions):
                 if prediction.shape != (1024, 1024):
-                    prediction = cv2.resize(prediction, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
+                    prediction = cv2.resize(prediction, dsize=(1024, 1024), interpolation=cv2.INTER_NEAREST)
                 predictions_resize.append(prediction)
+        
             predictions_resize = torch.from_numpy(np.array(predictions_resize)).unsqueeze(1).to(config['device'])
             
-            # pdb.set_trace()
             dice, dice_neg, dice_pos = all_dice_scores(predictions_resize, labels, 0.5)
             
             dices.extend(dice.cpu().numpy().tolist())
@@ -63,14 +76,15 @@ def evaluate(config, model, testing_loader):
 
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
+    # weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
     parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
     args = parser.parse_args()
     
     # load yaml file
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-    
+        
+    weights_path = config['save_checkpoint']
     list_transforms = []
     list_transforms.extend(
         [

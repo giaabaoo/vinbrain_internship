@@ -16,6 +16,8 @@ from metrics import all_dice_scores, epoch_time
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
 from albumentations.pytorch import ToTensorV2
 import argparse
+import albumentations as A
+import cv2
 import pdb
 
 def get_args_parser():
@@ -92,7 +94,7 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
             Path("./checkpoints/").mkdir(parents=True, exist_ok=True)
-            pdb.set_trace()
+            print("Saving checkpoints ", config['save_checkpoint'])
             torch.save({'epoch': epoch, 
                         'model_state_dict': model.state_dict(), 
                         'optimizer_state_dict': optimizer.state_dict(),
@@ -106,14 +108,14 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         print(f"Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s")
         print(f"\tTrain dice Loss: {train_loss:.3f} | Train dice score: {train_acc:.3f}")
         print(f"\t Val. dice Loss: {valid_loss:.3f} |  Val. dice score: {valid_acc:.3f}")
-        wandb.log(
-            {
-                "Train dice loss": train_loss,
-                "Train dice score": train_acc,
-                "Val. dice loss": valid_loss,
-                "Val. dice score": valid_acc,
-            }
-        )
+        # wandb.log(
+        #     {
+        #         "Train dice loss": train_loss,
+        #         "Train dice score": train_acc,
+        #         "Val. dice loss": valid_loss,
+        #         "Val. dice score": valid_acc,
+        #     }
+        # )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pneumothorax training script", parents=[get_args_parser()])
@@ -122,20 +124,32 @@ if __name__ == "__main__":
     # load yaml file
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-
-    list_transforms = []
-    list_transforms.extend(
-        [
+    
+    test_transform = Compose([
             Resize(config['image_height'], config['image_width']),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
             ToTensorV2(),
-        ]
-    )
+        ])
+  
     
-    transform = Compose(list_transforms)
+    # train_transform = Compose([
+    #             HorizontalFlip(p=0.5),
+    #             ShiftScaleRotate(
+    #                 shift_limit=0,  # no resizing
+    #                 scale_limit=0.1,
+    #                 rotate_limit=10, # rotate
+    #                 p=0.5,
+    #                 border_mode=cv2.BORDER_CONSTANT
+    #             ),
+    #              GaussNoise(),
+    #             A.MultiplicativeNoise(multiplier=1.5, p=1),
+    #             Resize(config['image_height'], config['image_width']),
+    #             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+    #             ToTensorV2(),
+    #         ])
     
-    training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=transform)
-    testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
+    training_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=test_transform)
+    testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=test_transform)
     
     training_loader = DataLoader(training_data, batch_size=config['batch_size'], shuffle=True)
     validation_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
@@ -172,14 +186,14 @@ if __name__ == "__main__":
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, verbose=True)
         
     if config['continue_training']:
-        model.load_state_dict(torch.load(config['continue_training_path'])['model_state_dict'])
-        epoch = torch.load(config['continue_training_path'])['epoch']
+        model.load_state_dict(torch.load(config['save_checkpoint'])['model_state_dict'])
+        epoch = torch.load(config['save_checkpoint'])['epoch']
     else:
         epoch = 0
     
     model.to(config['device'])
-    wandb.init(project="pneumothorax", entity="_giaabaoo_", config=config)
-    wandb.watch(model)
+    # wandb.init(project="pneumothorax", entity="_giaabaoo_", config=config)
+    # wandb.watch(model)
                 
     print(summary(model,input_size=(3,512,512))) 
     

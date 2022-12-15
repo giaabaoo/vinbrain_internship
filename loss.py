@@ -10,7 +10,7 @@ class DiceLoss(nn.Module):
     def forward(self, inputs, targets, smooth=1):
         
         #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = F.sigmoid(inputs)       
+        inputs = torch.sigmoid(inputs)       
         
         #flatten label and prediction tensors
         inputs = inputs.view(-1)
@@ -19,7 +19,7 @@ class DiceLoss(nn.Module):
         intersection = (inputs * targets).sum()                            
         dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
         
-        return 1 - dice
+        return dice
 
 class FocalLoss(nn.Module):
     def __init__(self, gamma):
@@ -55,7 +55,7 @@ class MixedLoss(nn.Module):
         self.dice_loss = DiceLoss()
 
     def forward(self, input, target):
-        loss = self.alpha*self.focal(input, target) + torch.log(self.dice_loss(input, target))
+        loss = self.alpha*self.focal(input, target) - torch.log(self.dice_loss(input, target))
         return loss.mean()
 
 class DiceBCELoss(nn.Module):

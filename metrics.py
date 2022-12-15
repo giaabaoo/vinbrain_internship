@@ -1,5 +1,6 @@
 import torch
 import pdb
+import numpy as np
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time
@@ -8,11 +9,11 @@ def epoch_time(start_time, end_time):
     return elapsed_mins, elapsed_secs
     
     
-def all_dice_scores(predictions, labels, threshold=0.5):
+def all_dice_scores(predictions, labels, threshold):
     batch_size = len(labels)
-        
-    predictions = torch.sigmoid(predictions)
     
+    predictions = torch.sigmoid(predictions)
+    # pdb.set_trace()
     predictions = predictions.view(batch_size, -1)
     labels = labels.view(batch_size, -1)
     assert(predictions.shape == labels.shape)

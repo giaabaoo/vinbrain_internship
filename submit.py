@@ -61,7 +61,9 @@ class TestDataset(Dataset):
         return data
 
 def post_process(probability, threshold, min_size):
+    # pdb.set_trace()
     mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
+    # pdb.set_trace()
     num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
     predictions = np.zeros((1024, 1024), np.float32)
     num = 0
@@ -72,15 +74,25 @@ def post_process(probability, threshold, min_size):
             num += 1
     return predictions, num
 
+def run_length_encode(component):
+    component = component.T.flatten()
+    start = np.where(component[1:] > component[:-1])[0]+1
+    end = np.where(component[:-1] > component[1:])[0]+1
+    length = end-start
+    rle = []
+    for i in range(len(length)):
+        if i == 0:
+            rle.extend([start[0], length[0]])
+        else:
+            rle.extend([start[i]-end[i-1], length[i]])
+    rle = ' '.join([str(r) for r in rle])
+    return rle
 if __name__ == "__main__":
-    
-
     parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
     args = parser.parse_args()
     # load yaml file
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-    
     list_transforms = []
     list_transforms.extend(
         [
@@ -102,6 +114,7 @@ if __name__ == "__main__":
         model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
     weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
+    print("Using weights", weights_path.split("/")[-1])
     model.to(config['device'])
     sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/annotations/stage_2_sample_submission.csv"
     df = pd.read_csv(sample_submission_path)
@@ -112,14 +125,14 @@ if __name__ == "__main__":
         preds = preds.detach().cpu().numpy()[:, 0, :, :] # (batch_size, 1, size, size) -> (batch_size, size, size)
         for probability in preds:
             if probability.shape != (1024, 1024):
-                probability = cv2.resize(probability, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
-            predict, num_predict = post_process(probability, 0.5, 3500)
+                probability = cv2.resize(probability, dsize=(1024, 1024), interpolation=cv2.INTER_NEAREST)
+            predict, num_predict = post_process(probability, 0.5, 3000)
             
             if num_predict == 0:
                 encoded_pixels.append('-1')
             else:
-                r = mask2rle(predict, 1024, 1024)
+                # pdb.set_trace()
+                r = run_length_encode(predict)
                 encoded_pixels.append(r)
     df['EncodedPixels'] = encoded_pixels
-    
     df.to_csv('submission.csv', columns=['ImageId', 'EncodedPixels'], index=False)

@@ -50,9 +50,9 @@ class Pneumothorax(Dataset):
         all_masks = (all_masks >= 1.0).astype('float32') # for overlap cases
         
         augmented = self.transform(image=image, mask=all_masks)
+        
         image = augmented['image']
         all_masks = augmented['mask'].unsqueeze(0)
-        
         
         sample = {'image': image, 'mask': all_masks}
         
@@ -102,7 +102,7 @@ class EvalPneumothorax(Dataset):
         # convert 0-255 to 0-1
         all_masks = all_masks / 255.0
         all_masks = (all_masks >= 1.0).astype('float32') # for overlap cases
-        
+                
         augmented = self.transform(image=image)
         image = augmented['image']
         
@@ -111,6 +111,8 @@ class EvalPneumothorax(Dataset):
         ])
         augmented_mask = test_transform(image=all_masks)
         all_masks = augmented_mask['image']
+        
+        
         
         sample = {'image': image, 'mask': all_masks}
         
