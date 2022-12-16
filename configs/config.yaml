@@ -1,13 +1,13 @@
-root_train_image_path: "../dataset/pngs/original_images/train"
-root_train_label_path: "../dataset/annotations/full_json/train.json"
-root_test_image_path: "../dataset/pngs/original_images/test"
-root_test_label_path: "../dataset/annotations/full_json/test.json"
+root_train_image_path: "../dataset/pngs/original_rle_images/train"
+root_train_label_path: "../dataset/annotations/full_rle/train.json"
+root_test_image_path: "../dataset/pngs/original_rle_images/test"
+root_test_label_path: "../dataset/annotations/full_rle/test.json"
 
 image_height: 512
 image_width: 512
 
 batch_size: 8
-loss_function: "WeightedFocalLoss"
+loss_function: "MixedLoss"
 optimizer: "Adam"
 learning_rate: 0.0005
 scheduler: 'ReduceLROnPlateau'
@@ -20,4 +20,4 @@ num_epochs: 10
 device: 'cuda'
 save_path: "./checkpoints"
 continue_training: False
-save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best-focal.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"

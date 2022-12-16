@@ -1,11 +1,9 @@
 from torch.utils.data import Dataset
-from PIL import Image
 from utils.mask_functions import rle2mask
 import json
 import cv2
 import numpy as np
-import torchvision.transforms as transforms
-from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 
 import os
@@ -53,6 +51,8 @@ class Pneumothorax(Dataset):
         
         image = augmented['image']
         all_masks = augmented['mask'].unsqueeze(0)
+        
+        # pdb.set_trace()
         
         sample = {'image': image, 'mask': all_masks}
         
@@ -111,16 +111,14 @@ class EvalPneumothorax(Dataset):
         ])
         augmented_mask = test_transform(image=all_masks)
         all_masks = augmented_mask['image']
-        
-        
-        
+                
         sample = {'image': image, 'mask': all_masks}
         
         return sample
     
 if __name__ == "__main__":
-    root_image_path = "../dataset/pngs/balanced_images/test"
-    root_label_path = "../dataset/annotations/test.json"
+    root_image_path = "../dataset/pngs/original_rle_images/test"
+    root_label_path = "../dataset/annotations/full_rle/test.json"
     list_transforms = []
     list_transforms.extend(
         [
@@ -136,3 +134,4 @@ if __name__ == "__main__":
     for idx in  range(len(dataloader)):
         data_dict = dataloader[idx]
         image, mask = data_dict['image'], data_dict['mask']
+        

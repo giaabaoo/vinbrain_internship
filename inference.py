@@ -1,16 +1,10 @@
-from unet import Unet
 import numpy as np
 import cv2
 import yaml
-from PIL import Image
 import torch
-import torchvision.transforms as transforms
 import pdb
-import torchvision.models as models
-from torch import nn, optim
-from unet import Unet
 import segmentation_models_pytorch as smp
-from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 from pathlib import Path
 import argparse

@@ -1,6 +1,5 @@
 from dataset import EvalPneumothorax
 import segmentation_models_pytorch as smp
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch
 import yaml
@@ -8,7 +7,7 @@ from tqdm import tqdm
 from metrics import all_dice_scores
 import numpy as np
 import pdb
-from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
+from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 import argparse
 import cv2
@@ -71,8 +70,8 @@ def evaluate(config, model, testing_loader):
             dices.extend(dice.cpu().numpy().tolist())
             negative_dices.extend(dice_neg.cpu().numpy().tolist())
             positive_dices.extend(dice_pos.cpu().numpy().tolist())
-        
-    return np.mean(dices), np.mean(negative_dices), np.mean(positive_dices)
+    macro_dice_score = (np.mean(negative_dices) + np.mean(positive_dices))/2    
+    return macro_dice_score, np.mean(negative_dices), np.mean(positive_dices)
 
 
 if __name__ == "__main__":

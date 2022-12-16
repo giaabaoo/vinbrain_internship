@@ -13,7 +13,6 @@ def all_dice_scores(predictions, labels, threshold):
     batch_size = len(labels)
     
     predictions = torch.sigmoid(predictions)
-    # pdb.set_trace()
     predictions = predictions.view(batch_size, -1)
     labels = labels.view(batch_size, -1)
     assert(predictions.shape == labels.shape)

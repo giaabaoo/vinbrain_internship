@@ -21,7 +21,7 @@ def process_dicom(file_path):
     return data
 
 if __name__ == "__main__":
-    annotation_path = "../../dataset/annotations/stage_2_train.csv"
+    annotation_path = "../../dataset/annotations/train-rle.csv"
     
     dicom_images_train_glob = "../../dataset/dicom/dicom-images-train/*/*/*.dcm"
     dicom_images_test_glob = "../../dataset/dicom/dicom-images-test/*/*/*.dcm"
@@ -34,19 +34,19 @@ if __name__ == "__main__":
         image_id = Path(image_path).stem
         dicom_path_dict[image_id] = image_path
             
-    Path("../../dataset/pngs/original_images/train/").mkdir(parents=True, exist_ok=True)
-    Path("../../dataset/pngs/original_images/test/").mkdir(parents=True, exist_ok=True)
+    Path("../../dataset/pngs/original_rle_images/train/").mkdir(parents=True, exist_ok=True)
+    Path("../../dataset/pngs/original_rle_images/test/").mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(annotation_path, usecols=["ImageId", "EncodedPixels"])
+    df = pd.read_csv(annotation_path)
     data_dict = {}
     
     for idx, row in tqdm(df.iterrows(), total=len(df)):
-        image_id, encoded_pixels = row["ImageId"], row["EncodedPixels"]
+        image_id, encoded_pixels = row["ImageId"], row[" EncodedPixels"]
         
         try:
-            data_dict[image_id].append(encoded_pixels)
+            data_dict[image_id].append(encoded_pixels.lstrip(" "))
         except:
-            data_dict[image_id] = [encoded_pixels]
+            data_dict[image_id] = [encoded_pixels.lstrip(" ")]
     
     train_dict, test_dict = {}, {}   
 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         
         file_path = dicom_path_dict[image_id]
         image = process_dicom(file_path)
-        cv2.imwrite("../../dataset/pngs/original_images/train/" + str(image_id) + ".png", image)
+        cv2.imwrite("../../dataset/pngs/original_rle_images/train/" + str(image_id) + ".png", image)
     
     print("Processing test images (converting from dicom to pngs)...")
     for image_id in tqdm(test_keys):
@@ -71,13 +71,14 @@ if __name__ == "__main__":
         
         file_path = dicom_path_dict[image_id]
         image = process_dicom(file_path)
-        cv2.imwrite("../../dataset/pngs/original_images/test/" + str(image_id) + ".png", image)
-                 
+        cv2.imwrite("../../dataset/pngs/original_rle_images/test/" + str(image_id) + ".png", image)
+    
+    
     print("Generating json annotations for each image...")
-    with open('../../dataset/annotations/train.json', 'w') as f:
+    with open('../../dataset/annotations/full_rle/train.json', 'w') as f:
         json.dump(train_dict, f)
     
-    with open('../../dataset/annotations/test.json', 'w') as f:
+    with open('../../dataset/annotations/full_rle/test.json', 'w') as f:
         json.dump(test_dict, f)
         
     print("Done!")
