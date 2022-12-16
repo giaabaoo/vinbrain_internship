@@ -1,7 +1,6 @@
 # vinbrain_internship
 
 ## TODO TASKS:
-- Calculate macros dice scores
 - Train and evaluate on positive samples 
 
 
@@ -39,6 +38,8 @@ Weighted focal loss | Trained on re-sampled dataset |  0.774 |
 - Experiments on focal loss with resampled and full dataset
 - Investigating model low performance
 - Final evaluation on full size image
+- Calculate macros dice scores
+
 
 ## PLAN
 - Experiment on other losses
