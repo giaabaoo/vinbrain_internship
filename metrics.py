@@ -12,7 +12,9 @@ def epoch_time(start_time, end_time):
 def all_dice_scores(predictions, labels, threshold):
     batch_size = len(labels)
     
-    predictions = torch.sigmoid(predictions)
+    # predictions = torch.sigmoid(predictions)
+    # predictions = torch.from_numpy(np.vectorize(lambda value: 0.0 if value < 0.5 else 1.0)(predictions.detach().cpu().numpy())).to('cuda')
+    
     predictions = predictions.view(batch_size, -1)
     labels = labels.view(batch_size, -1)
     assert(predictions.shape == labels.shape)

@@ -33,7 +33,7 @@ def visualize(image_path, mask):
     return blend_image
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best-focal.pt"
+    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
     Path("./results/").mkdir(parents=True, exist_ok = True)
     
     parser = argparse.ArgumentParser("Pneumothorax inference script", parents=[get_args_parser()])
@@ -53,10 +53,8 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    if config['backbone'] == "resnet34":
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
-    elif config['backbone'] == "efficientnet-b4":
-        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
+    model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+
         
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])

@@ -22,6 +22,7 @@ from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize,
 from albumentations.pytorch import ToTensorV2
 from utils.mask_functions import mask2rle
 import argparse
+from model import UNET
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
@@ -108,10 +109,9 @@ if __name__ == "__main__":
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
     
-    if config['backbone'] == "resnet34":
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
-    elif config['backbone'] == "efficientnet-b4":
-        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
+    # model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+    model = UNET(in_channels=3, out_channels=1)
+    
     weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     print("Using weights", weights_path.split("/")[-1])

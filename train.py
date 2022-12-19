@@ -1,8 +1,8 @@
 import os
-from dataset import Pneumothorax
+from dataset import Pneumothorax, PneumothoraxImagesPair
 import segmentation_models_pytorch as smp
 from torch.utils.data import DataLoader
-from torch import optim
+from torch import optim, nn
 import torch
 import yaml
 from torchsummary import summary
@@ -13,9 +13,17 @@ from pathlib import Path
 import numpy as np
 from loss import MixedLoss, WeightedFocalLoss, DiceLoss, DiceBCELoss, FocalLoss
 from metrics import all_dice_scores, epoch_time
-from albumentations import (Normalize, Resize, Compose)
+from albumentations import (Normalize, Resize, Compose, HorizontalFlip, ShiftScaleRotate, GaussNoise)
 from albumentations.pytorch import ToTensorV2
 import argparse
+import torchvision.models as models
+from torch.autograd import Variable
+
+
+from unet import Unet
+from model import UNET
+import cv2
+import albumentations as A
 import pdb
 
 def get_args_parser():
@@ -36,8 +44,12 @@ def train(config, model, training_loader, optimizer, criterion):
         images, labels = images.to(config['device']), labels.to(config['device'])
         
         optimizer.zero_grad()
-        predictions = model(images)  # forward
-
+        predictions = model(images)  # forward      
+        # predictions = torch.sigmoid(predictions)       
+        # predictions = torch.from_numpy(np.vectorize(lambda value: 0.0 if value <= 0.5 else 1.0)(predictions.detach().cpu().numpy())).to('cuda')
+        # predictions = Variable(predictions.data, requires_grad=True)
+        
+          
         loss = criterion(predictions, labels)
         dice, dice_neg, dice_pos = all_dice_scores(predictions, labels, 0.5)
         loss.backward()  # backward
@@ -65,7 +77,11 @@ def evaluate(config, model, validation_loader, criterion):
             images, labels = sample['image'], sample['mask']
             images, labels = images.to(config['device']), labels.to(config['device'])
             
+            
             predictions = model(images)
+            # predictions = torch.sigmoid(predictions)       
+            # predictions = torch.from_numpy(np.vectorize(lambda value: 0.0 if value < 0.5 else 1.0)(predictions.detach().cpu().numpy())).to('cuda')
+            # predictions = Variable(predictions.data, requires_grad=True)
             
             loss = criterion(predictions, labels)
             
@@ -107,14 +123,14 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         print(f"Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s")
         print(f"\tTrain dice Loss: {train_loss:.3f} | Train dice score: {train_acc:.3f}")
         print(f"\t Val. dice Loss: {valid_loss:.3f} |  Val. dice score: {valid_acc:.3f}")
-        wandb.log(
-            {
-                "Train dice loss": train_loss,
-                "Train dice score": train_acc,
-                "Val. dice loss": valid_loss,
-                "Val. dice score": valid_acc,
-            }
-        )
+        # wandb.log(
+        #     {
+        #         "Train dice loss": train_loss,
+        #         "Train dice score": train_acc,
+        #         "Val. dice loss": valid_loss,
+        #         "Val. dice score": valid_acc,
+        #     }
+        # )
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pneumothorax training script", parents=[get_args_parser()])
@@ -130,24 +146,25 @@ if __name__ == "__main__":
             ToTensorV2(),
         ])
     
-    # train_transform = Compose([
-    #             HorizontalFlip(p=0.5),
-    #             ShiftScaleRotate(
-    #                 shift_limit=0,  # no resizing
-    #                 scale_limit=0.1,
-    #                 rotate_limit=10, # rotate
-    #                 p=0.5,
-    #                 border_mode=cv2.BORDER_CONSTANT
-    #             ),
-    #              GaussNoise(),
-    #             A.MultiplicativeNoise(multiplier=1.5, p=1),
-    #             Resize(config['image_height'], config['image_width']),
-    #             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
-    #             ToTensorV2(),
-    #         ])
+    if config['transform']:
+        train_transform = Compose([
+                    HorizontalFlip(p=0.5),
+                    ShiftScaleRotate(
+                        shift_limit=0,  # no resizing
+                        scale_limit=0.1,
+                        rotate_limit=10, # rotate
+                        p=0.5,
+                        border_mode=cv2.BORDER_CONSTANT
+                    ),
+                    GaussNoise(),
+                    A.MultiplicativeNoise(multiplier=1.5, p=1),
+                    Resize(config['image_height'], config['image_width']),
+                    Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+                    ToTensorV2(),
+                ])
     
-    training_data = Pneumothorax(config['root_train_image_path'], config['root_train_label_path'], transform=test_transform)
-    testing_data = Pneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=test_transform)
+    training_data = PneumothoraxImagesPair(config['root_train_image_path'], config['root_train_label_path'], transform=test_transform)
+    testing_data = PneumothoraxImagesPair(config['root_test_image_path'], config['root_test_label_path'], transform=test_transform)
     
     training_loader = DataLoader(training_data, batch_size=config['batch_size'], shuffle=True)
     validation_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
@@ -167,11 +184,17 @@ if __name__ == "__main__":
         criterion = WeightedFocalLoss(10.0, 2.0)
     elif config['loss_function'] == 'DiceBCELoss':
         criterion = DiceBCELoss()
+    elif config['loss_function'] == 'BCEWithLogitsLoss':
+        criterion = nn.BCEWithLogitsLoss()
 
-    if config['backbone'] == "resnet34":
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
-    elif config['backbone'] == "efficientnet-b4":
-        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
+ 
+    # model = smp.Unet(config['backbone'], encoder_weights=None, activation=None)
+    # model_ft = models.resnet50(weights=True)
+    # model_ft.conv1 = nn.Conv2d(1, 64, kernel_size=(3, 3), stride=(2, 2), padding=(3, 3), bias=False)
+    
+    # model = Unet(model_ft)
+    
+    model = UNET(in_channels=3, out_channels=1)
         
     if config['optimizer'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
@@ -190,8 +213,8 @@ if __name__ == "__main__":
         epoch = 0
     
     model.to(config['device'])
-    wandb.init(project="pneumothorax", entity="_giaabaoo_", config=config)
-    wandb.watch(model)
+    # wandb.init(project="pneumothorax", entity="_giaabaoo_", config=config)
+    # wandb.watch(model)
                 
     print(summary(model,input_size=(3,512,512))) 
     train_and_evaluate(training_loader, validation_loader, model, criterion, optimizer, scheduler, config, epoch)

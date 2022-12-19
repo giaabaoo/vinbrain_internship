@@ -99,10 +99,8 @@ if __name__ == "__main__":
     
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
     
-    if config['backbone'] == "resnet34":
-        model = smp.Unet("resnet34", encoder_weights="imagenet", activation=None)
-    elif config['backbone'] == "efficientnet-b4":
-        model = smp.Unet("efficientnet-b4", encoder_weights="imagenet", activation=None)
+    model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+
     
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])

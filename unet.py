@@ -102,5 +102,5 @@ class Unet(nn.Module):
         
         x0 = self.deconv0(x1)
         x0 = self.conv_0(x0)
-        x0 = self.sigmoid(x0)
+        # x0 = self.sigmoid(x0)
         return x0

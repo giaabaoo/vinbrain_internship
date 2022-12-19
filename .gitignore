@@ -133,3 +133,4 @@ wandb/
 checkpoints/
 results/
 examples/
+visualize/
