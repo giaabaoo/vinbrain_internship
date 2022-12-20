@@ -8,6 +8,7 @@ from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 from pathlib import Path
 import argparse
+from model import UNET
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
@@ -15,16 +16,31 @@ def get_args_parser():
 
     return parser
 
-def postprocess(config, x):
+def post_process(probability, threshold, min_size):
+    # pdb.set_trace()
+    mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
+    # pdb.set_trace()
+    num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
+    predictions = np.zeros((1024, 1024), np.float32)
+    num = 0
+    for c in range(1, num_component):
+        p = (component == c)
+        if p.sum() > min_size:
+            predictions[p] = 1
+            num += 1
+    return predictions, num
+def postprocess(x, image_path):
+    image = cv2.imread(image_path)
+    height, width, _ = image.shape
     # pdb.set_trace()
     x = np.transpose(x, (1, 2, 0)) 
     x = np.vectorize(lambda value: 0 if value < 0.5 else 255)(x)
-    x = cv2.resize(x, (1024, 1024), 0, 0, interpolation = cv2.INTER_NEAREST)
+    x = cv2.resize(x, (width, height), 0, 0, interpolation = cv2.INTER_NEAREST)
     
     return x
 
+
 def visualize(image_path, mask):
-    # pdb.set_trace()
     image = cv2.imread(image_path)
     mask = np.repeat(mask[..., np.newaxis], 3, axis=-1).astype(np.uint8)
      
@@ -33,7 +49,7 @@ def visualize(image_path, mask):
     return blend_image
 
 if __name__ == "__main__":
-    weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
+    # weights_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
     Path("./results/").mkdir(parents=True, exist_ok = True)
     
     parser = argparse.ArgumentParser("Pneumothorax inference script", parents=[get_args_parser()])
@@ -53,27 +69,33 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+    if config['backbone'] != 'None':
+        model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+    else:
+        model = UNET(in_channels=3, out_channels=1)
 
-        
+    weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
                 
     ### Inference on image
-    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/pngs/original_images/train/1.2.276.0.7230010.3.1.4.8323329.300.1517875162.258081.png"
+    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/chest-xray/split/test/MCUCXR_0140_1.png"
     image = cv2.imread(image_path)
     # image = Image.fromarray(image)
-
+    # pdb.set_trace()
     model.eval()
+    
     augmented = transform(image=image)
     image = augmented['image'].unsqueeze(0).to(config['device'])
     output = model(image)
     output = torch.sigmoid(output)
     output = output.squeeze(0).detach().cpu().numpy()
 
-    output = postprocess(config, output)
+    output = postprocess(output, image_path)
     
     cv2.imwrite("results/output.png", output)
     blend = visualize(image_path, output)
     cv2.imwrite("results/blend.png", blend)
+    image_name = image_path.split("/")[-1]
+    cv2.imwrite(f"results/{image_name}", cv2.imread(image_path))
     #comment

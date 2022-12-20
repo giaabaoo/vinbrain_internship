@@ -1,4 +1,4 @@
-from dataset import EvalPneumothorax
+from dataset import EvalPneumothorax, EvalPneumothoraxImagesPair
 import segmentation_models_pytorch as smp
 from torch.utils.data import DataLoader
 import torch
@@ -11,6 +11,7 @@ from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 import argparse
 import cv2
+from model import UNET
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
@@ -18,59 +19,37 @@ def get_args_parser():
 
     return parser
 
-def post_process(probability, threshold, min_size):
-    mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
-    num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
-    predictions = np.zeros((1024, 1024), np.float32)
-    num = 0
-    for c in range(1, num_component):
-        p = (component == c)
-        if p.sum() > min_size:
-            predictions[p] = 1
-            num += 1
-    return predictions, num
-
-
 def evaluate(config, model, testing_loader):
     model.eval()
     
     dices, negative_dices, positive_dices = [], [], []
-
+    
     with torch.no_grad():
         for sample in tqdm(testing_loader, desc="Evaluating", leave=False):
             images, labels = sample['image'], sample['mask']
             images, labels = images.to(config['device']), labels.to(config['device'])
+            
+            
             predictions = model(images)
-            # pdb.set_trace()
-            # pdb.set_trace()
             predictions = predictions.detach().cpu().numpy()[:, 0, :, :] # bs x 1 x width x height --> bs x width x height
-            
-            # for pred in predictions:
-            #     mask = cv2.threshold(pred, 0.2, 1, cv2.THRESH_BINARY)[1]
-            #     num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
-            #     num = 0
-            #     for c in range(1, num_component):
-            #         p = (component == c)
-            #         if p.sum() > 3500:
-            #             num += 1
-            #     if num >= 1:
-            #         pdb.set_trace()
-            
-            
+            # get cv2 height and width from predictions
+            height, width = labels.shape[1], labels.shape[2]
+
             predictions_resize = []
             for idx, prediction in enumerate(predictions):
-                if prediction.shape != (1024, 1024):
-                    prediction = cv2.resize(prediction, dsize=(1024, 1024), interpolation=cv2.INTER_NEAREST)
+                if prediction.shape != (height, width):
+                    prediction = cv2.resize(prediction, dsize=(height, width), interpolation=cv2.INTER_NEAREST)
                 predictions_resize.append(prediction)
         
-            predictions_resize = torch.from_numpy(np.array(predictions_resize)).unsqueeze(1).to(config['device'])
-            
+            predictions_resize = torch.from_numpy(np.array(predictions_resize)).to(config['device'])
             dice, dice_neg, dice_pos = all_dice_scores(predictions_resize, labels, 0.5)
             
             dices.extend(dice.cpu().numpy().tolist())
             negative_dices.extend(dice_neg.cpu().numpy().tolist())
             positive_dices.extend(dice_pos.cpu().numpy().tolist())
-    macro_dice_score = (np.mean(negative_dices) + np.mean(positive_dices))/2    
+            
+    # macro_dice_score = (np.mean(negative_dices) + np.mean(positive_dices))/2    
+    macro_dice_score = np.mean(positive_dices)
     return macro_dice_score, np.mean(negative_dices), np.mean(positive_dices)
 
 
@@ -94,12 +73,18 @@ if __name__ == "__main__":
     )
 
     transform = Compose(list_transforms)
-   
-    testing_data = EvalPneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)    
     
+    if config['annotation_type'] == 'images':
+        testing_data = EvalPneumothoraxImagesPair(config['root_test_image_path'], config['root_test_label_path'], transform=transform)    
+    elif config['annotation_type'] == 'json':
+        testing_data = EvalPneumothorax(config['root_test_image_path'], config['root_test_label_path'], transform=transform)
+
     testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
     
-    model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+    if config['backbone'] != 'None':
+        model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+    else:
+        model = UNET(in_channels=3, out_channels=1)
 
     
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])

@@ -15,6 +15,7 @@ step_size: 30
 gamma: 0.1
 backbone: "resnet101"
 
+annotation_type: json
 transform: False
 num_epochs: 150
 device: 'cuda'

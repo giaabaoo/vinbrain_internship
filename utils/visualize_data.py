@@ -12,8 +12,8 @@ ALPHA = 0.8
 BETA = 1  - ALPHA
 
 if __name__ == "__main__":
-    train_annotations_path = "../../dataset/annotations/train.json"
-    test_annotations_path = "../../dataset/annotations/test.json"
+    train_annotations_path = "../../dataset/annotations/full_json/train.json"
+    test_annotations_path = "../../dataset/annotations/full_json/test.json"
     
     train_images_path = "../../dataset/pngs/original_images/train"
     test_images_path = "../../dataset/pngs/original_images/test"
@@ -39,12 +39,13 @@ if __name__ == "__main__":
         height, width, _ = image.shape
         
         if annotations[0] == "-1":
-                shutil.copy(image_path, os.path.join("../../dataset/pngs/segmentation_masks/normal_train", image_name))
+            do_sth = 0
+                # shutil.copy(image_path, os.path.join("../../dataset/pngs/segmentation_masks/normal_train", image_name))
         else:
             all_masks = np.zeros((height, width))
             
             for idx, annotation in enumerate(annotations):
-                mask = rle2mask(annotation, width, height)
+                mask = rle2mask(annotation, width, height).T
                 all_masks += mask
                 
             all_masks = np.repeat(all_masks[..., np.newaxis], 3, axis=-1).astype(np.uint8)
@@ -60,7 +61,8 @@ if __name__ == "__main__":
         height, width, _ = image.shape
         
         if annotations[0] == "-1":
-                shutil.copy(image_path, os.path.join("../../dataset/pngs/segmentation_masks/normal_test", image_name))
+            do_sth = 0
+                # shutil.copy(image_path, os.path.join("../../dataset/pngs/segmentation_masks/normal_test", image_name))
         else:
             all_masks = np.zeros((height, width))
             
