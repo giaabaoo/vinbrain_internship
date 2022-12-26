@@ -27,31 +27,31 @@ if __name__ == "__main__":
     train_keys = data_keys[:split_idx]
     test_keys = data_keys[split_idx:]
     
-    print("Preparing training folders: ")
-    for image_name in tqdm(train_keys):
-        image_path =os.path.join(images_path, image_name)
-        shutil.copy(image_path, os.path.join(train_path, image_name))
-        
-        try:
-            shutil.copy(os.path.join(labels_path, image_name), os.path.join(mask_train_path, image_name))
-        except:
-            image = cv2.imread(image_path)
-            height, width, _ = image.shape
-            mask = np.zeros((height, width))
-            mask = np.repeat(mask[..., np.newaxis], 3, axis=-1).astype(np.uint8)
-            cv2.imwrite(os.path.join(mask_train_path, image_name), mask)
-    
-    # print("Preparing testing folders: ")
-    # for image_name in tqdm(test_keys):
+    # print("Preparing training folders: ")
+    # for image_name in tqdm(train_keys):
     #     image_path =os.path.join(images_path, image_name)
-    #     shutil.copy(image_path, os.path.join(test_path, image_name))
+    #     shutil.copy(image_path, os.path.join(train_path, image_name))
+        
     #     try:
-    #         shutil.copy(os.path.join(labels_path, image_name), os.path.join(mask_test_path, image_name))
+    #         shutil.copy(os.path.join(labels_path, image_name), os.path.join(mask_train_path, image_name))
     #     except:
     #         image = cv2.imread(image_path)
     #         height, width, _ = image.shape
     #         mask = np.zeros((height, width))
     #         mask = np.repeat(mask[..., np.newaxis], 3, axis=-1).astype(np.uint8)
-    #         cv2.imwrite(os.path.join(mask_test_path, image_name), mask)
+    #         cv2.imwrite(os.path.join(mask_train_path, image_name), mask)
+    
+    print("Preparing testing folders: ")
+    for image_name in tqdm(test_keys):
+        image_path =os.path.join(images_path, image_name)
+        shutil.copy(image_path, os.path.join(test_path, image_name))
+        try:
+            shutil.copy(os.path.join(labels_path, image_name), os.path.join(mask_test_path, image_name))
+        except:
+            image = cv2.imread(image_path)
+            height, width, _ = image.shape
+            mask = np.zeros((height, width))
+            mask = np.repeat(mask[..., np.newaxis], 3, axis=-1).astype(np.uint8)
+            cv2.imwrite(os.path.join(mask_test_path, image_name), mask)
     
         

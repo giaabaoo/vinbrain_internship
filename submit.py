@@ -19,8 +19,9 @@ from pydicom.pixel_data_handlers.util import apply_voi_lut
 import segmentation_models_pytorch as smp
 import pdb
 from albumentations import (HorizontalFlip, ShiftScaleRotate, Normalize, Resize, Compose, GaussNoise)
-from albumentations.pytorch import ToTensorV2
+from albumentations.pytorch import ToTensor
 from utils.mask_functions import mask2rle
+from unet import UNetWithResnet50Encoder, UNetWithResNext101Encoder
 import argparse
 from model import UNET
 
@@ -60,6 +61,24 @@ class TestDataset(Dataset):
             data = np.amax(data) - data
                 
         return data
+    
+class TestDatasetDataframe(Dataset):
+    def __init__(self, root, df, transform):
+        self.root = root
+        self.fnames = list(df["ImageId"])
+        self.transform = transform
+
+    def __getitem__(self, idx):
+        fname = self.fnames[idx]
+        path = os.path.join(self.root, fname + ".dcm")
+        ds = pydicom.dcmread(path)
+        image = ds.pixel_array
+        image = np.stack((image, ) * 3, axis=-1)
+        images = self.transform(image = image)["image"]
+        return images
+
+    def __len__(self):
+        return len(self.fnames)
 
 def post_process(probability, threshold, min_size):
     # pdb.set_trace()
@@ -88,50 +107,63 @@ def run_length_encode(component):
             rle.extend([start[i]-end[i-1], length[i]])
     rle = ' '.join([str(r) for r in rle])
     return rle
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
     args = parser.parse_args()
     # load yaml file
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+    print(config)
     list_transforms = []
     list_transforms.extend(
         [
             Resize(config['image_height'], config['image_width']),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
-            ToTensorV2(),
+            ToTensor(),
         ]
     )
 
     transform = Compose(list_transforms)
     
-    testing_data = TestDataset("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_images", transform=transform)    
+    sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_sample_submission.csv"
+    df = pd.read_csv(sample_submission_path)
     
-    testing_loader = DataLoader(testing_data, batch_size=config['batch_size'], shuffle=True)
+    if config['annotation_type'] == 'dataframe':
+        print("Dataframe")
+        testing_data = TestDatasetDataframe(config['root_test_path'], df, transform)
+    else:
+        testing_data = TestDataset("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_test", transform=transform)    
+    testing_loader = DataLoader(testing_data, batch_size=4, shuffle=True)
     
-    # model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
-    model = UNET(in_channels=3, out_channels=1)
-    
+    if config['backbone'] == 'None':
+        model = UNET(in_channels=3, out_channels=1)
+    elif config['backbone'] == 'torchvision.resnet50':
+        print("Using torchvision")
+        model = UNetWithResnet50Encoder()
+    elif config['backbone'] == 'torchvision.resnext101':
+        model = UNetWithResNext101Encoder()
+    else:
+        model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+         
     weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     print("Using weights", weights_path.split("/")[-1])
     model.to(config['device'])
-    sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/annotations/stage_2_sample_submission.csv"
-    df = pd.read_csv(sample_submission_path)
-
+    model.eval()
+   
     encoded_pixels = []
     for i, batch in enumerate(tqdm(testing_loader)):
         preds = torch.sigmoid(model(batch.to(config['device'])))
         preds = preds.detach().cpu().numpy()[:, 0, :, :] # (batch_size, 1, size, size) -> (batch_size, size, size)
         for probability in preds:
             if probability.shape != (1024, 1024):
-                probability = cv2.resize(probability, dsize=(1024, 1024), interpolation=cv2.INTER_NEAREST)
-            predict, num_predict = post_process(probability, 0.5, 3000)
+                probability = cv2.resize(probability, dsize=(1024, 1024), interpolation=cv2.INTER_LINEAR)
+            predict, num_predict = post_process(probability, 0.5, 3500)
             
             if num_predict == 0:
                 encoded_pixels.append('-1')
             else:
-                # pdb.set_trace()
                 r = run_length_encode(predict)
                 encoded_pixels.append(r)
     df['EncodedPixels'] = encoded_pixels

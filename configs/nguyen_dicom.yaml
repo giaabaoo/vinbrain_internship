@@ -1,0 +1,23 @@
+root_df_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/nguyen/another_dicom/siim/nguyen_preprocessing_data.csv"
+root_test_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/nguyen/another_dicom/siim-acr-pneumothorax-segmentation/stage_2_images"
+positive_only: False
+
+image_height: 512
+image_width: 512
+
+batch_size: 8
+loss_function: "MixedLoss"
+optimizer: "Adam"
+learning_rate: 0.0001
+scheduler: 'ReduceLROnPlateau'
+step_size: 30
+gamma: 0.1
+backbone: "torchvision.resnet50"
+
+annotation_type: dataframe
+transform: True
+num_epochs: 50
+device: 'cuda'
+save_path: "./checkpoints"
+continue_training: False
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/nguyen_dicom_torchvision.pt"

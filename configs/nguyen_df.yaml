@@ -5,19 +5,19 @@ positive_only: False
 image_height: 512
 image_width: 512
 
-batch_size: 8
-loss_function: "MixedLoss"
-optimizer: "Nadam"
+batch_size: 16
+loss_function: "ComboLoss"
+optimizer: "Adam"
 learning_rate: 0.0001
-scheduler: 'CosineAnnealingLR'
+scheduler: 'ReduceLROnPlateau'
 step_size: 30
 gamma: 0.1
 backbone: "efficientnet-b4"
 
 annotation_type: dataframe
 transform: True
-num_epochs: 100
+num_epochs: 200
 device: 'cuda'
 save_path: "./checkpoints"
 continue_training: False
-save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/mixed-loss.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/nguyen_df.pt"

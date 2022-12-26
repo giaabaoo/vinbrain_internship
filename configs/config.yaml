@@ -2,6 +2,7 @@ root_train_image_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/
 root_train_label_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/annotations/positive_samples/train.json"
 root_test_image_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/pngs/positive_images/test"
 root_test_label_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/annotations/positive_samples/test.json"
+positive_only: False
 
 image_height: 256
 image_width: 256
@@ -20,5 +21,5 @@ transform: False
 num_epochs: 200
 device: 'cuda'
 save_path: "./checkpoints"
-continue_training: False
+continue_training: True
 save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/model-ckpt-best.pt"
