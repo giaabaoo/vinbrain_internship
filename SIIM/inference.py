@@ -13,6 +13,7 @@ from unet import UNetWithResnet50Encoder, UNetWithResNext101Encoder
 import pydicom
 import os
 from PIL import Image, ImageDraw
+import albumentations as A
 import shutil
 
 def get_concat_h(im1, im2):
@@ -41,7 +42,6 @@ def post_process(probability, threshold, min_size):
 
 def postprocess(x, image):
     height, width, _ = image.shape
-    # pdb.set_trace()
     x = np.transpose(x, (1, 2, 0)) 
     x = np.vectorize(lambda value: 0 if value < 0.5 else 255)(x)
     x = cv2.resize(x, (width, height), 0, 0, interpolation = cv2.INTER_NEAREST)
@@ -55,7 +55,22 @@ def visualize(image, mask):
     blend_image = cv2.addWeighted(image, 0.5, mask, 0.5, 0.0)
     
     return blend_image
-
+def to_tensor(x, **kwargs):
+    return x.transpose(2, 0, 1).astype('float32')
+def get_preprocessing(preprocessing_fn=None):
+    """Construct preprocessing transform    
+    Args:
+        preprocessing_fn (callable): data normalization function 
+            (can be specific for each pretrained neural network)
+    Return:
+        transform: albumentations.Compose
+    """   
+    _transform = []
+    if preprocessing_fn:
+        _transform.append(A.Lambda(image=preprocessing_fn))
+    _transform.append(A.Lambda(image=to_tensor, mask=to_tensor))
+        
+    return A.Compose(_transform)
 if __name__ == "__main__":
     Path("./results/").mkdir(parents=True, exist_ok = True)
     
@@ -69,8 +84,8 @@ if __name__ == "__main__":
     list_transforms.extend(
         [
             Resize(config['image_height'], config['image_width']),
-            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
-            ToTensor(),
+            # Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            # ToTensor(),
         ]
     )
 
@@ -87,32 +102,39 @@ if __name__ == "__main__":
         model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
 
     weights_path = config['save_checkpoint']
+    print("Inferencing using ", weights_path)
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
                 
     ### Inference on image
     # image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/chest-xray/split/test/MCUCXR_0369_1.png"
-    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_train/1.2.276.0.7230010.3.1.4.8323329.301.1517875162.280319.dcm"
+    image_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_train/1.2.276.0.7230010.3.1.4.8323329.11969.1517875236.686733.dcm"
+    
     if ".dcm" in image_path:
         ds = pydicom.dcmread(image_path)
         image = ds.pixel_array # img is 2-D matrix
+        image = cv2.equalizeHist(image)
         image = np.stack((image, ) * 3, axis=-1)
     else:
         image = cv2.imread(image_path)
     model.eval()
-    
     augmented = transform(image=image)
-    image_transform = augmented['image'].unsqueeze(0).to(config['device'])
+    image_transform = augmented['image']
+    
+    preprocess_input = None
+    preprocessing = get_preprocessing(preprocess_input)
+    image_transform = torch.from_numpy(preprocessing(image=image_transform)['image']).unsqueeze(0).to(config['device'])
+    
     output = model(image_transform)
-    pdb.set_trace()
+    
     output = torch.sigmoid(output)
+    
     output = output.squeeze(0).detach().cpu().numpy()
 
     output = postprocess(output, image)
     
     image_name = image_path.split("/")[-1].replace(".dcm", ".png")  
     ground_truth_path = os.path.join("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/nguyen/pngs/masks", image_name)
-    # ground_truth_path = os.path.join("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/chest-xray/split/test_mask", image_name)
     gt = cv2.imread(ground_truth_path)
     gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
     gt = Image.fromarray(gt)

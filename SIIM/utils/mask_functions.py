@@ -1,9 +1,12 @@
 import numpy as np
 import pydicom
+import cv2
+import pdb
 
 def getMaskAndImg(dataframe, idx):
     ds = pydicom.dcmread(dataframe["filepath"][idx])
     img = ds.pixel_array # img is 2-D matrix
+    img = cv2.equalizeHist(img)
     mask = run_length_decode_nguyen(dataframe["EncodedPixels"][idx]) # convert rle into mask
     img = np.stack((img, ) * 3, axis=-1) # get matrix shape (width, height, 3)
     return img, mask

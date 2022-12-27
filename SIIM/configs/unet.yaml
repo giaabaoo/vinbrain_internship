@@ -1,4 +1,4 @@
-root_df_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/nguyen/nguyen_dicom/siim/nguyen_preprocessing_data.csv"
+root_df_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/others_code/nguyen/siimacr/nguyen_preprocessing_data.csv"
 root_test_path: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/nguyen/nguyen_dicom/siim-acr-pneumothorax-segmentation/stage_2_images"
 positive_only: False
 
@@ -13,8 +13,9 @@ scheduler: 'CosineAnnealingLR'
 T_max: 10
 step_size: 30
 gamma: 0.1
-backbone: "torchvision.resnext101"
+backbone: "torchvision.resnet50"
 weights: {'bce':3, 'dice':1, 'focal':5}
+encoder_weights: imagenet
 
 annotation_type: dataframe
 transform: True
@@ -22,5 +23,5 @@ num_epochs: 50
 device: 'cuda'
 save_path: "./checkpoints"
 continue_training: True
-trained_weights: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/resnext_torchvision.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/resnext_torchvision.pt"
+trained_weights: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/unet.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/unet.pt"

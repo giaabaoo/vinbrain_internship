@@ -5,7 +5,7 @@ positive_only: False
 image_height: 512
 image_width: 512
 
-batch_size: 8
+batch_size: 1
 loss_function: "MixedLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
@@ -13,15 +13,14 @@ scheduler: 'CosineAnnealingLR'
 T_max: 10
 step_size: 30
 gamma: 0.1
-backbone: "torchvision.resnet50"
+backbone: "torchvision.resnext101"
 weights: {'bce':3, 'dice':1, 'focal':5}
-encoder_weights: imagenet
 
 annotation_type: dataframe
 transform: True
 num_epochs: 50
 device: 'cuda'
 save_path: "./checkpoints"
-continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/unet.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/unet.pt"
+continue_training: True
+trained_weights: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/resnext_torchvision.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/vinbrain_internship/checkpoints/resnext_torchvision_equal.pt"

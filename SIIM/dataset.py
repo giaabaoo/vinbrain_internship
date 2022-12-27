@@ -67,7 +67,9 @@ class PneumothoraxDataFrame(Dataset):
     def __getitem__(self, idx):
         image_id = self.fnames[idx]
         indice_inDataFrame = self.dataframe.index[self.dataframe['UID'] == image_id].tolist()[0]
-        image, mask = getMaskAndImg(self.dataframe, indice_inDataFrame) # img, mask are arrays
+        image, mask = getMaskAndImg(self.dataframe, indice_inDataFrame) # img, mask are arrays   \
+        # if "1.2.276.0.7230010.3.1.4.8323329.11969.1517875236.686733" in image_id:
+        #     pdb.set_trace()
         augmentedData = self.transform(image = image, mask = mask)
         image = augmentedData['image']
         mask = augmentedData['mask']
@@ -75,7 +77,7 @@ class PneumothoraxDataFrame(Dataset):
             sample = self.preprocessing(image=image, mask=mask[..., np.newaxis])
             image, mask = sample['image'], sample['mask']
         
-        sample = {'image': image, 'mask': mask}
+        sample = {'image_id': image_id, 'image': image, 'mask': mask}
         
         return sample
 

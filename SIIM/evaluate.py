@@ -30,10 +30,17 @@ def evaluate(config, model, testing_loader):
     
     with torch.no_grad():
         for sample in tqdm(testing_loader, desc="Evaluating", leave=False):
-            images, labels = sample['image'], sample['mask']
+            image_ids, images, labels = sample['image_id'], sample['image'], sample['mask']
             images, labels = images.to(config['device']), labels.to(config['device'])
             
+            
+            
             predictions = model(images)
+            # if "1.2.276.0.7230010.3.1.4.8323329.11969.1517875236.686733" in image_ids:
+            #     output = torch.sigmoid(predictions)
+            #     pdb.set_trace()
+            #     output = output.squeeze(0).detach().cpu().numpy()
+            #     output = np.vectorize(lambda value: 0 if value < 0.5 else 255)(output)
             predictions = predictions.detach().cpu().numpy()[:, 0, :, :] # bs x 1 x width x height --> bs x width x height
             # get cv2 height and width from predictions
             height, width = labels.shape[-2], labels.shape[-1]
@@ -89,8 +96,8 @@ if __name__ == "__main__":
     list_transforms.extend(
         [
             Resize(config['image_height'], config['image_width']),
-            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
-            ToTensor(),
+            # Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            # ToTensor(),
         ]
     )
 
@@ -99,9 +106,11 @@ if __name__ == "__main__":
     if config['backbone'] == 'None':
         model = UNET(in_channels=3, out_channels=1)
     elif config['backbone'] == 'torchvision.resnet50':
+        preprocess_input = None
         print("Using torchvision")
         model = UNetWithResnet50Encoder()
     elif config['backbone'] == 'torchvision.resnext101':
+        preprocess_input = None
         model = UNetWithResNext101Encoder()
     else:
         model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)

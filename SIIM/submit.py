@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
+from segmentation_models_pytorch.encoders import get_preprocessing_fn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 from PIL import Image
@@ -24,6 +25,7 @@ from utils.mask_functions import mask2rle
 from unet import UNetWithResnet50Encoder, UNetWithResNext101Encoder
 import argparse
 from model import UNET
+import albumentations as A
 
 def get_args_parser():
     parser = argparse.ArgumentParser("Parsing arguments", add_help=False)
@@ -63,18 +65,24 @@ class TestDataset(Dataset):
         return data
     
 class TestDatasetDataframe(Dataset):
-    def __init__(self, root, df, transform):
+    def __init__(self, root, df, transform, preprocessing):
         self.root = root
         self.fnames = list(df["ImageId"])
         self.transform = transform
+        self.preprocessing = preprocessing
 
     def __getitem__(self, idx):
         fname = self.fnames[idx]
         path = os.path.join(self.root, fname + ".dcm")
         ds = pydicom.dcmread(path)
         image = ds.pixel_array
+        image = cv2.equalizeHist(image)
         image = np.stack((image, ) * 3, axis=-1)
+        
         images = self.transform(image = image)["image"]
+        if self.preprocessing:
+            images = self.preprocessing(image=image)['image']
+            
         return images
 
     def __len__(self):
@@ -83,7 +91,6 @@ class TestDatasetDataframe(Dataset):
 def post_process(probability, threshold, min_size):
     # pdb.set_trace()
     mask = cv2.threshold(probability, threshold, 1, cv2.THRESH_BINARY)[1]
-    # pdb.set_trace()
     num_component, component = cv2.connectedComponents(mask.astype(np.uint8))
     predictions = np.zeros((1024, 1024), np.float32)
     num = 0
@@ -107,7 +114,22 @@ def run_length_encode(component):
             rle.extend([start[i]-end[i-1], length[i]])
     rle = ' '.join([str(r) for r in rle])
     return rle
-
+def to_tensor(x, **kwargs):
+    return x.transpose(2, 0, 1).astype('float32')
+def get_preprocessing(preprocessing_fn=None):
+    """Construct preprocessing transform    
+    Args:
+        preprocessing_fn (callable): data normalization function 
+            (can be specific for each pretrained neural network)
+    Return:
+        transform: albumentations.Compose
+    """   
+    _transform = []
+    if preprocessing_fn:
+        _transform.append(A.Lambda(image=preprocessing_fn))
+    _transform.append(A.Lambda(image=to_tensor, mask=to_tensor))
+        
+    return A.Compose(_transform)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Pneumothorax evaluation script", parents=[get_args_parser()])
     args = parser.parse_args()
@@ -129,22 +151,27 @@ if __name__ == "__main__":
     sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_sample_submission.csv"
     df = pd.read_csv(sample_submission_path)
     
-    if config['annotation_type'] == 'dataframe':
-        print("Dataframe")
-        testing_data = TestDatasetDataframe(config['root_test_path'], df, transform)
-    else:
-        testing_data = TestDataset("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_test", transform=transform)    
-    testing_loader = DataLoader(testing_data, batch_size=4, shuffle=True)
-    
     if config['backbone'] == 'None':
         model = UNET(in_channels=3, out_channels=1)
     elif config['backbone'] == 'torchvision.resnet50':
+        preprocess_input = None
         print("Using torchvision")
         model = UNetWithResnet50Encoder()
     elif config['backbone'] == 'torchvision.resnext101':
+        preprocess_input = None
         model = UNetWithResNext101Encoder()
     else:
         model = smp.Unet(config['backbone'], encoder_weights="imagenet", activation=None)
+        preprocess_input = get_preprocessing_fn(config['backbone'], pretrained='imagenet')
+    
+    if config['annotation_type'] == 'dataframe':
+        print("Dataframe")
+        testing_data = TestDatasetDataframe(config['root_test_path'], df, transform, get_preprocessing(preprocess_input))
+    else:
+        testing_data = TestDataset("/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_test", transform=transform)    
+    testing_loader = DataLoader(testing_data, batch_size=2, shuffle=True)
+    
+    
          
     weights_path = config['save_checkpoint']
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
