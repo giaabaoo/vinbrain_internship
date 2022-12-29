@@ -1,5 +1,5 @@
 from torch.utils.data import Dataset
-from utils.mask_functions import rle2mask, run_length_decode, getMaskAndImg
+from utils.mask_functions import run_length_decode, getMaskAndImg
 import json
 import cv2
 import numpy as np
