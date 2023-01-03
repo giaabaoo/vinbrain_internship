@@ -7,22 +7,20 @@
 #### Architecture + Loss functions
 Architecture | Loss functions | Validation dice score | Private test dice score | Notes
 --- | --- | :---: | :---: | --- |
-UNet + Resnet34 | Cross Entropy Loss | 0.85 | 0.73 | Resize at 512 x 512
+**UNet** + Resnet34 | Cross Entropy Loss | 0.85 | 0.73 | Resize at 512 x 512
 UNet + SE-Resnext101 | Focal Loss | 0.86 | 0.75 | Resize at 512 x 512
 UNet + SE-Resnext101 | Focal Loss | 0.88 | 0.78 | Resize at 480 x 640
 UNet + SE-Resnext101 | Active Contour Loss | - | - | Resize at 480 x 640
 UNet + Efficient-net B4 | Focal Loss | 0.8 | 0.76 | Resize at 512 x 512
-
-BlazeNeo | Cross Entropy Loss | 0.89 | 0.76 | Resize at 480 x 640
+**DoubleUNet** | Cross Entropy Loss| 0.76 | 0.61 | Resize at 480 x 640
+**UNet++** + SE-Resnext101 | Focal Loss | 0.81 | 0.71 | Resize at 480 x 640
+**BlazeNeo** | Cross Entropy Loss | 0.89 | 0.76 | Resize at 480 x 640
 BlazeNeo | Focal Loss | 0.86 | 0.75 | Resize at 480 x 640
-
-NeuUNet | Cross Entropy Loss | 0.88 | 0.79 | Resize at 480 x 640
+**NeuUNet** | Cross Entropy Loss | 0.88 | 0.79 | Resize at 480 x 640
 NeoUNet | Tversky Loss | 0.88 | 0.76 | Resize at 480 x 640
 NeoUNet | CE + Tversky Mean Loss| 0.86 | 0.72 | Resize at 480 x 640
 NeoUNet | Active Contour Loss | - | - | Resize at 480 x 640
 
-DoubleUNet | Cross Entropy Loss| 0.76 | 0.61 | Resize at 480 x 640
-UNet++ + SE-Resnext101 | Focal Loss | 0.81 | 0.71 | Resize at 480 x 640
 
 ## DONE:
 #### 1. Prepare data
