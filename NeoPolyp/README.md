@@ -1,7 +1,7 @@
 # vinbrain_internship
 
 ## TODO TASKS:
-- Upsample the input with different image sizes
+- Experiment on other architectures using other features
 
 ## Results table
 #### Architecture + Loss functions
@@ -35,6 +35,7 @@ Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 
 #### 2. Build a full pipeline 
 - DataLoader: generate {image, mask} pairs by eroding and binarizing mask's labels + data augmentation
+- Upsample the input with different image sizes
 - Baseline UNet model + pretrained resnet34
 - Resize 512x512
 - Logging tracks with wandb
@@ -48,4 +49,3 @@ Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 
 ## PLAN
 - Experiment on other losses
-- Experiment on other architectures
