@@ -7,6 +7,14 @@ import segmentation_models_pytorch as smp
 import timm.optim
 from .loss import NeoUNetLoss, ActiveContourLoss
 import cv2
+from networks.unet import UNet
+from networks.blazeneo.model import BlazeNeo
+from networks.neounet.model import NeoUNet
+from networks.doubleunet.model import DUNet
+from networks.FocalNet.main import FUnet
+from networks.hardnetmseg.model import HarDNetMSEG
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def apply_transform(config):
     valid_transform = Compose([
@@ -43,7 +51,7 @@ def prepare_dataloaders(config, train_transform, valid_transform):
     
     return training_loader, validation_loader
 
-def prepare_objectives(config, model):
+def prepare_objectives(config, model, training_loader):
     # define loss function
     if config['loss_function'] == 'BCEWithLogitsLoss':
         criterion = nn.BCEWithLogitsLoss()
@@ -61,6 +69,8 @@ def prepare_objectives(config, model):
         criterion = NeoUNetLoss()
     elif config['loss_function'] == 'ActiveContourLoss':
         criterion = ActiveContourLoss(config['device'])
+    elif config['loss_function'] == 'CE_DiceLoss':
+        criterion = [nn.CrossEntropyLoss(), smp.losses.DiceLoss(mode='multiclass')]
 
     if config['optimizer'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
@@ -74,6 +84,30 @@ def prepare_objectives(config, model):
     elif config['scheduler'] == 'ReduceLROnPlateau':
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=5, verbose=True)
     elif config['scheduler'] == 'CosineAnnealingLR':
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = config['T_max'], verbose=True)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = len(training_loader), verbose=True)
+    elif config['scheduler'] == 'CosineAnnealingWarmRestarts':
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0 = len(training_loader), T_mult = config['T_mult'], verbose=True)
 
     return criterion, optimizer, scheduler
+
+def prepare_architecture(config):
+    if "unetplusplus" in config['backbone'].split("."):
+        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
+                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+    elif "blazeneo" in config['backbone']:
+        model = BlazeNeo()
+    elif "neounet" in config['backbone']:
+        model = NeoUNet(num_classes=3)
+    elif "doubleunet" in config['backbone']:
+        model = DUNet()
+    elif "focalunet" in config['backbone']:
+        model = FUnet()
+    elif "hardnet" in config['backbone']:
+        model = HarDNetMSEG()
+    elif config['backbone'] != "None":
+        model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
+                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+    else:
+        model = UNet(n_channels=3, n_classes=3)
+        
+    return model

@@ -9,7 +9,7 @@ image_height: 352
 image_width: 352
 
 batch_size: 8
-loss_function: "NeoUNetLoss"
+loss_function: "CrossEntropyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
 scheduler: 'CosineAnnealingLR'
@@ -22,7 +22,7 @@ encoder_weights: 'imagenet'
 activation: 'sigmoid'
 
 transform: True
-num_epochs: 50
+num_epochs: 100
 device: 'cuda'
 continue_training: False
 trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet_upsample.pt"

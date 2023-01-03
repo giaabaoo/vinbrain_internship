@@ -1,13 +1,6 @@
 from timm.models import create_model
 from . import focalUnet
-
-def FUnet():
-    config1 = "focalnet_tiny_lrf.yaml"
-    model = build_model(config1)
-    print("number of parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad) // 10 ** 6)
-    model.cuda()
-    return model
-
+import pdb
 def build_model(config):
     model_type = config.MODEL.TYPE
     is_pretrained = config.MODEL.PRETRAINED 

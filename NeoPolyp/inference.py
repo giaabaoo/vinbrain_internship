@@ -3,16 +3,15 @@ import cv2
 import yaml
 import torch
 import pdb
-import segmentation_models_pytorch as smp
 from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensor
 from pathlib import Path
 import argparse
-from models.unet import UNet
 import pydicom
 import os
 from PIL import Image, ImageDraw, ImageFont
 import albumentations as A
+from utils.train_utils import prepare_architecture
 from utils.helper import get_concat_h, get_args_parser, postprocess, visualize
 import shutil
 
@@ -33,16 +32,7 @@ if __name__ == "__main__":
         ToTensor(),
     ])
 
-    if "unetplusplus" in config['backbone'].split("."):
-        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    elif "blazeneo" in config['backbone']:
-        model = BlazeNeo()
-    elif config['backbone'] != "None":
-        model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    else:
-        model = UNet(n_channels=3, n_classes=3)
+    model = prepare_architecture(config)
 
     weights_path = config['save_checkpoint']
     print("Inferencing using ", weights_path)

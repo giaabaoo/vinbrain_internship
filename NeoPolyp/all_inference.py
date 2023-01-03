@@ -3,21 +3,16 @@ import cv2
 import yaml
 import torch
 import pdb
-import segmentation_models_pytorch as smp
 from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 from metrics import compute_dice_coef
 from pathlib import Path
 import argparse
 from tqdm import tqdm
-from models.unet import UNet
-from models.blazeneo.model import BlazeNeo
-import pydicom
 import os
 from PIL import Image, ImageDraw, ImageFont
-import albumentations as A
-from utils.helper import mask2rgb, get_concat_h, get_args_parser, valid_postprocess, visualize
-import shutil
+from utils.helper import get_concat_h, get_args_parser, valid_postprocess, visualize
+from utils.train_utils import prepare_architecture
 
 LABEL_TO_COLOR = {0:[0,0,0], 1:[255,0,0], 2:[0,255,0]}
 
@@ -56,17 +51,7 @@ if __name__ == "__main__":
         ToTensorV2(),
     ])
 
-    if "unetplusplus" in config['backbone'].split("."):
-        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    elif "blazeneo" in config['backbone']:
-        model = BlazeNeo()
-    elif config['backbone'] != "None":
-        model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    else:
-        model = UNet(n_channels=3, n_classes=3)
-
+    model = prepare_architecture(config)
     backbone = config['backbone'] 
     Path(f"./results/{backbone}/hmasks").mkdir(parents=True, exist_ok=True)
     Path(f"./results/{backbone}/valid_blend").mkdir(parents=True, exist_ok=True)

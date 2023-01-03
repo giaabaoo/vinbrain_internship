@@ -3,24 +3,16 @@ import cv2
 import yaml
 import torch
 import pdb
-import segmentation_models_pytorch as smp
-from models.neounet.model import NeoUNet
 from albumentations import (Normalize, Resize, Compose)
-from models.doubleunet.model import DUNet
 from albumentations.pytorch import ToTensorV2
-from models.blazeneo.model import BlazeNeo
-from metrics import compute_dice_coef
 from pathlib import Path
 import argparse
 from tqdm import tqdm
 import pandas as pd
-from models.unet import UNet
-import pydicom
 import os
-from PIL import Image, ImageDraw, ImageFont
-import albumentations as A
 from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize
-import shutil
+from utils.train_utils import prepare_architecture
+
 
 LABEL_TO_COLOR = {0:[0,0,0], 1:[255,0,0], 2:[0,255,0]}
 
@@ -93,20 +85,7 @@ if __name__ == "__main__":
         ToTensorV2(),
     ])
 
-    if "unetplusplus" in config['backbone'].split("."):
-        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    elif "blazeneo" in config['backbone']:
-        model = BlazeNeo()
-    elif "neounet" in config['backbone']:
-        model = NeoUNet(num_classes=3)
-    elif "doubleunet" in config['backbone']:
-        model = DUNet()
-    elif config['backbone'] != "None":
-        model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    else:
-        model = UNet(n_channels=3, n_classes=3)
+    model = prepare_architecture(config)
     
     csv_name = config['csv_name']
     Path(f"./results/{csv_name}/test_blend").mkdir(parents=True, exist_ok=True)

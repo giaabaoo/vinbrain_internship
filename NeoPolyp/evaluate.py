@@ -1,23 +1,19 @@
-import segmentation_models_pytorch as smp
-from models.neounet.model import NeoUNet
 from torch.utils.data import DataLoader
 import torch
 import yaml
 from dataset import EvalNeoPolyp
 from tqdm import tqdm
-from models.doubleunet.model import DUNet
+import pdb
 import numpy as np
 from metrics import compute_dice_coef, compute_F1, compute_IoU
-from models.unet import UNet
-import pdb
-from models.blazeneo.model import BlazeNeo
 from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 import argparse
 import cv2
 import albumentations as A
 import pandas as pd
-from utils.helper import get_args_parser, mask_to_class
+from utils.helper import get_args_parser
+from utils.train_utils import prepare_architecture
 
 def evaluate(config, model, validation_loader):
     model.eval()
@@ -76,20 +72,7 @@ if __name__ == "__main__":
         ToTensorV2(),
     ])
     
-    if "unetplusplus" in config['backbone'].split("."):
-        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    elif "blazeneo" in config['backbone']:
-        model = BlazeNeo()
-    elif "neounet" in config['backbone']:
-        model = NeoUNet(num_classes=3)
-    elif "doubleunet" in config['backbone']:
-        model = DUNet()
-    elif config['backbone'] != "None":
-        model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
-    else:
-        model = UNet(n_channels=3, n_classes=3)
+    model = prepare_architecture(config)
     
     validating_data = EvalNeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
     validation_loader = DataLoader(validating_data, batch_size=1, shuffle=True)

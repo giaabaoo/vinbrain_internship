@@ -240,7 +240,7 @@ class BasicLayer(nn.Module):
 
     def __init__(self, dim, out_dim, input_resolution, depth,
                  mlp_ratio=4., drop=0., drop_path=0., norm_layer=nn.LayerNorm, 
-                 downsample=None, upsample=None, use_checkpoint=False,
+                 downsample=None, use_checkpoint=False, 
                  focal_level=1, focal_window=1, 
                  use_conv_embed=False, 
                  use_layerscale=False, layerscale_value=1e-4, 
@@ -275,19 +275,6 @@ class BasicLayer(nn.Module):
 
         if downsample is not None:
             self.downsample = downsample(
-                img_size=input_resolution,
-                patch_size=2,
-                in_chans=dim,
-                embed_dim=out_dim,
-                use_conv_embed=use_conv_embed,
-                norm_layer=norm_layer,
-                is_stem=False
-            )
-        else:
-            self.downsample = None
-
-        if upsample is not None:
-            self.upsample = upsample(
                 img_size=input_resolution, 
                 patch_size=2, 
                 in_chans=dim, 
@@ -297,7 +284,7 @@ class BasicLayer(nn.Module):
                 is_stem=False
             )
         else:
-            self.upsample = None
+            self.downsample = None
 
     def forward(self, x, H, W):
         for blk in self.blocks:
@@ -310,10 +297,8 @@ class BasicLayer(nn.Module):
         if self.downsample is not None:
             x = x.transpose(1, 2).reshape(x.shape[0], -1, H, W)
             x, Ho, Wo = self.downsample(x)
-        elif self.upsample is not None:
-            x, Ho, Wo = self.upsample(x)
         else:
-            Ho, Wo = H, W
+            Ho, Wo = H, W        
         return x, Ho, Wo
 
     def extra_repr(self) -> str:
@@ -326,7 +311,6 @@ class BasicLayer(nn.Module):
         if self.downsample is not None:
             flops += self.downsample.flops()
         return flops
-
 
 class PatchEmbed(nn.Module):
     r""" Image to Patch Embedding
@@ -368,127 +352,12 @@ class PatchEmbed(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
+
         x = self.proj(x)        
         H, W = x.shape[2:]
         x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
         if self.norm is not None:
             x = self.norm(x)
-        return x, H, W
-
-    def flops(self):
-        Ho, Wo = self.patches_resolution
-        flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
-        if self.norm is not None:
-            flops += Ho * Wo * self.embed_dim
-        return flops
-
-class PatchExpand(nn.Module):
-    r""" Image to Patch Embedding
-
-    Args:
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-    """
-
-    def __init__(self, img_size=(224, 224), patch_size=4, in_chans=3, embed_dim=96, use_conv_embed=False,
-                 norm_layer=None, is_stem=False):
-        super().__init__()
-        patch_size = to_2tuple(patch_size)
-        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
-        self.img_size = img_size
-        self.patch_size = patch_size
-        self.patches_resolution = patches_resolution
-        self.num_patches = patches_resolution[0] * patches_resolution[1]
-
-        self.in_chans = in_chans
-        self.embed_dim = embed_dim
-
-        if use_conv_embed:
-            # if we choose to use conv embedding, then we treat the stem and non-stem differently
-            if is_stem:
-                kernel_size = 7;
-                padding = 2;
-                stride = 4
-            else:
-                kernel_size = 3;
-                padding = 1;
-                stride = 2
-            self.proj = nn.ConvTranspose2d(in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=1)
-        else:
-            self.proj = nn.ConvTranspose2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, output_padding=0)
-
-        if norm_layer is not None:
-            self.norm = norm_layer(embed_dim)
-        else:
-            self.norm = None
-
-    def forward(self, x):
-        H, W = self.img_size
-        x = x.transpose(1, 2).reshape(x.shape[0], -1, H, W)
-        x = self.proj(x)
-        H, W = x.shape[2:]
-        x = x.flatten(2).transpose(1, 2)  # B Ph*Pw C
-        if self.norm is not None:
-            x = self.norm(x)
-        return x, H, W
-
-    def flops(self):
-        Ho, Wo = self.patches_resolution
-        flops = Ho * Wo * self.embed_dim * self.in_chans * (self.patch_size[0] * self.patch_size[1])
-        if self.norm is not None:
-            flops += Ho * Wo * self.embed_dim
-        return flops
-
-class Final_PatchExpand(nn.Module):
-    r""" Image to Patch Embedding
-
-    Args:
-        img_size (int): Image size.  Default: 224.
-        patch_size (int): Patch token size. Default: 4.
-        in_chans (int): Number of input image channels. Default: 3.
-        embed_dim (int): Number of linear projection output channels. Default: 96.
-        norm_layer (nn.Module, optional): Normalization layer. Default: None
-    """
-
-    def __init__(self, img_size=(224, 224), patch_size=4, in_chans=3, embed_dim=96, use_conv_embed=False,
-                 norm_layer=None, is_stem=False):
-        super().__init__()
-        patch_size = to_2tuple(patch_size)
-        patches_resolution = [img_size[0] // patch_size[0], img_size[1] // patch_size[1]]
-        self.img_size = img_size
-        self.patch_size = patch_size
-        self.patches_resolution = patches_resolution
-        self.num_patches = patches_resolution[0] * patches_resolution[1]
-
-        self.in_chans = in_chans
-        self.embed_dim = embed_dim
-
-        if use_conv_embed:
-            # if we choose to use conv embedding, then we treat the stem and non-stem differently
-            if is_stem:
-                kernel_size = 7;
-                padding = 2;
-                stride = 4
-            else:
-                kernel_size = 3;
-                padding = 1;
-                stride = 2
-            self.proj = nn.ConvTranspose2d(in_chans, embed_dim, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=1)
-        else:
-            self.proj = nn.ConvTranspose2d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size, output_padding=0)
-
-        if norm_layer is not None:
-            self.norm = norm_layer(embed_dim)
-        else:
-            self.norm = None
-
-    def forward(self, x):
-        H, W = self.img_size
-        x = x.transpose(1, 2).reshape(x.shape[0], -1, H, W)
-        x = self.proj(x)
         return x, H, W
 
     def flops(self):
@@ -547,6 +416,7 @@ class FocalNet(nn.Module):
 
         self.num_layers = len(depths)
         embed_dim = [embed_dim * (2 ** i) for i in range(self.num_layers)]
+
         self.num_classes = num_classes
         self.embed_dim = embed_dim
         self.patch_norm = patch_norm
@@ -563,20 +433,10 @@ class FocalNet(nn.Module):
             norm_layer=norm_layer if self.patch_norm else None, 
             is_stem=True)
 
-        self.patch_expand = Final_PatchExpand(
-            img_size=(56, 56),
-            patch_size=4,
-            in_chans=embed_dim[0],
-            embed_dim=embed_dim[0],
-            use_conv_embed=use_conv_embed,
-            norm_layer=norm_layer if self.patch_norm else None,
-            is_stem=True)
-
         num_patches = self.patch_embed.num_patches
         patches_resolution = self.patch_embed.patches_resolution
         self.patches_resolution = patches_resolution
         self.pos_drop = nn.Dropout(p=drop_rate)
-
 
         # stochastic depth
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]  # stochastic depth decay rule
@@ -594,7 +454,6 @@ class FocalNet(nn.Module):
                                drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],
                                norm_layer=norm_layer, 
                                downsample=PatchEmbed if (i_layer < self.num_layers - 1) else None,
-                               upsample=None,
                                focal_level=focal_levels[i_layer], 
                                focal_window=focal_windows[i_layer], 
                                use_conv_embed=use_conv_embed,
@@ -606,44 +465,11 @@ class FocalNet(nn.Module):
                                normalize_modulator=normalize_modulator
                     )
             self.layers.append(layer)
-            print("number of parameters:", sum(p.numel() for p in self.layers[i_layer].parameters() if p.requires_grad) // 10 ** 6)
-
-        # build layers
-        self.concat_back_dim = nn.ModuleList()
-        self.layers_up = nn.ModuleList()
-        depths = [1, 1, 1, 1]
-        for i_layer in range(self.num_layers - 1, -1, -1):
-            concat_linear = nn.Linear(2 * int(self.embed_dim[0] * 2 ** i_layer), int(self.embed_dim[0] * 2 ** i_layer)) if i_layer < 3 else nn.Identity()
-            if i_layer == self.num_layers - 1:
-                layer = PatchExpand(img_size=(patches_resolution[0] // (2 ** (i_layer)), patches_resolution[1] // (2 ** (i_layer))), patch_size=2, in_chans=embed_dim[i_layer], embed_dim=embed_dim[i_layer-1], norm_layer=norm_layer)
-            else:
-                layer = BasicLayer(dim=embed_dim[i_layer],
-                                   out_dim=embed_dim[i_layer - 1] if (i_layer < self.num_layers - 1) else None,
-                                   input_resolution=(patches_resolution[0] // (2 ** i_layer),
-                                                     patches_resolution[1] // (2 ** i_layer)),
-                                   depth=depths[i_layer],
-                                   mlp_ratio=self.mlp_ratio,
-                                   drop=drop_rate,
-                                   drop_path=list(reversed(dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])])),
-                                   norm_layer=norm_layer,
-                                   downsample=None,
-                                   upsample=PatchExpand if (i_layer > 0) else None,
-                                   focal_level=focal_levels[i_layer],
-                                   focal_window=focal_windows[i_layer],
-                                   use_conv_embed=use_conv_embed,
-                                   use_checkpoint=use_checkpoint,
-                                   use_layerscale=use_layerscale,
-                                   layerscale_value=layerscale_value,
-                                   use_postln=use_postln,
-                                   use_postln_in_modulation=use_postln_in_modulation,
-                                   normalize_modulator=normalize_modulator
-                                   )
-            self.layers_up.append(layer)
-            self.concat_back_dim.append(concat_linear)
 
         self.norm = norm_layer(self.num_features)
-        self.norm_up = norm_layer(self.embed_dim[0])
-        self.output = nn.Conv2d(in_channels=self.embed_dim[0], out_channels=9, kernel_size=7, padding=3, bias=False)
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
+        self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
+
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -655,26 +481,6 @@ class FocalNet(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    @torch.no_grad()
-    def load_pretrained(self, state_dict):
-        new_state_dict = {}
-        for state_key, state_value in state_dict.items():
-            keys = state_key.split('.')
-            print(keys)
-            m = self
-            if keys[0] == "patch_proj":
-                keys[0] = "patch_proj_down"
-
-            if keys[0] == "stages":
-                keys[0] = "stages_down"
-            if keys[0] == "cls_norm" or keys[0] == "cls_head":
-                continue
-            for key in keys:
-                if key.isdigit():
-                    m = m[int(key)]
-                else:
-                    m = getattr(m, key)
-        self.load_state_dict(new_state_dict, strict=False)
     @torch.jit.ignore
     def no_weight_decay(self):
         return {''}
@@ -684,34 +490,19 @@ class FocalNet(nn.Module):
         return {''}
 
     def forward_features(self, x):
-        x = x.repeat(1, 3, 1, 1)
         x, H, W = self.patch_embed(x)
         x = self.pos_drop(x)
-        x_downsample = []
+
         for layer in self.layers:
-            x_downsample.append(x)
             x, H, W = layer(x, H, W)
         x = self.norm(x)  # B L C
-        return x, x_downsample, H, W
-
-    # Dencoder and Skip connection
-    def forward_up_features(self, x, x_downsample, H, W):
-        for inx, layer_up in enumerate(self.layers_up):
-            if inx == 0:
-                x, H, W = layer_up(x)
-            else:
-                x = torch.cat([x, x_downsample[3 - inx]], -1)
-                x = self.concat_back_dim[inx](x)
-                x, H, W = layer_up(x, H, W)
-        x = self.norm_up(x)  # B L C
+        x = self.avgpool(x.transpose(1, 2))  # B C 1
+        x = torch.flatten(x, 1)
         return x
 
     def forward(self, x):
-        x, x_downsample, H, W = self.forward_features(x)
-        x = self.forward_up_features(x, x_downsample, H, W)
-        x, H, W = self.patch_expand(x)
-        x = self.output(x)
-
+        x = self.forward_features(x)
+        x = self.head(x)
         return x
 
     def flops(self):
@@ -762,18 +553,18 @@ model_urls = {
     "focalnet_tiny_srf": "",
     "focalnet_small_srf": "",
     "focalnet_base_srf": "",
-    "focalnet_tiny_lrf": "https://projects4jw.blob.core.windows.net/focalnet/release/classification/focalnet_tiny_lrf.pth",
-    "focalnet_small_lrf": "https://projects4jw.blob.core.windows.net/focalnet/release/classification/focalnet_small_lrf.pth",
+    "focalnet_tiny_lrf": "",
+    "focalnet_small_lrf": "",
     "focalnet_base_lrf": "",    
 }
 
 @register_model
 def focalnet_tiny_srf(pretrained=False, **kwargs):
-    model = FocalNet(depths=[3, 3, 3, 3], embed_dim=96, **kwargs)
+    model = FocalNet(depths=[2, 2, 6, 2], embed_dim=96, **kwargs)
     if pretrained:
         url = model_urls['focalnet_tiny_srf']
-        checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu")######## change
-        model.load_state_dict(checkpoint["model"], strict=False)
+        checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu", check_hash=True)
+        model.load_state_dict(checkpoint["model"])
     return model
 
 @register_model
@@ -796,18 +587,16 @@ def focalnet_base_srf(pretrained=False, **kwargs):
 
 @register_model
 def focalnet_tiny_lrf(pretrained=False, **kwargs):
-    model = FocalNet(depths=[4, 4, 4, 4], embed_dim=96, **kwargs)
+    model = FocalNet(depths=[2, 2, 6, 2], embed_dim=96, focal_levels=[3, 3, 3, 3], **kwargs)
     if pretrained:
         url = model_urls['focalnet_tiny_lrf']
-        checkpoint = torch.load(
-            r"./pretrained_focal/focalnet_tiny_lrf.zip",
-            map_location="cpu")
-        model.load_state_dict(checkpoint["model"], strict=False)
+        checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu", check_hash=True)
+        model.load_state_dict(checkpoint["model"])
     return model
 
 @register_model
 def focalnet_small_lrf(pretrained=False, **kwargs):
-    model = FocalNet(depths=[2, 2, 18, 2], embed_dim=96, **kwargs)
+    model = FocalNet(depths=[2, 2, 18, 2], embed_dim=96, focal_levels=[3, 3, 3, 3], **kwargs)
     if pretrained:
         url = model_urls['focalnet_small_lrf']
         checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu")
@@ -909,6 +698,8 @@ def focalnet_huge_fl4(pretrained=False, **kwargs):
 if __name__ == '__main__':
     img_size = 224
     x = torch.rand(16, 3, img_size, img_size).cuda()
+    # model = FocalNet(depths=[2, 2, 6, 2], embed_dim=96)
+    # model = FocalNet(depths=[12], patch_size=16, embed_dim=768, focal_levels=[3], focal_windows=[3], focal_factors=[2])
     model = FocalNet(depths=[2, 2, 6, 2], embed_dim=96, focal_levels=[3, 3, 3, 3]).cuda()
     print(model); 
     model(x)
