@@ -268,7 +268,9 @@ if __name__ == "__main__":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max = config['T_max'], verbose=True)
         
     if config['continue_training']:
-        model.load_state_dict(torch.load(config['trained_weights'])['model_state_dict'])
+        # model.load_state_dict(torch.load(config['trained_weights'])['model_state_dict'])
+        model.load_state_dict(torch.load(config['trained_weights'])['state_dict'])
+
         epoch = torch.load(config['trained_weights'])['epoch']
     else:
         epoch = 0

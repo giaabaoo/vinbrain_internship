@@ -134,3 +134,7 @@ checkpoints/
 results/
 examples/
 visualize/
+example_data/
+results/
+visualization/
+submission/

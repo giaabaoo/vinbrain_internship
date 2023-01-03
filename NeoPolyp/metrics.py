@@ -15,39 +15,16 @@ def compute_dice_coef(y_true, y_pred, thr=0.5, dim=0, epsilon=0.001):
     
 
 def compute_F1(output, target):
-    tp, fp, fn, tn = smp.metrics.get_stats(output, target, mode='multilabel', threshold=0.5, num_classes=3)
-    f1_score = smp.metrics.f1_score(tp, fp, fn, tn, reduction="micro")
+    tp, fp, fn, tn = smp.metrics.get_stats(output, target, mode='multiclass', num_classes=3)
+    f1_score = smp.metrics.f1_score(tp, fp, fn, tn, reduction="macro")
     
     return f1_score
 
-def compute_CM(preds, true_masks, labels, cm):
-    for j in range(len(true_masks)):
-        true = true_masks[j].cpu().detach().numpy().flatten()
-        pred = preds[j].cpu().detach().numpy().flatten()
-        cm += confusion_matrix(true, pred, labels=labels)
+def compute_IoU(output, target):
+    tp, fp, fn, tn = smp.metrics.get_stats(output, target, mode='multiclass', num_classes=3)
+    iou_score = smp.metrics.iou_score(tp, fp, fn, tn, reduction="macro")
     
-    return cm
-
-def compute_IoU(cm):
-    sum_over_row = cm.sum(axis=0)
-    sum_over_col = cm.sum(axis=1)
-    true_positives = np.diag(cm)
-
-    # sum_over_row + sum_over_col = 2 * true_positives + false_positives + false_negatives.
-    denominator = sum_over_row + sum_over_col - true_positives
-
-    iou = true_positives / denominator
-
-    return iou, np.nanmean(iou)
-
-
-def IoU(mask_true, mask_pred, n_classes=2):
-
-    labels = np.arange(n_classes)
-    cm = confusion_matrix(mask_true.flatten(),
-                          mask_pred.flatten(), labels=labels)
-
-    return compute_IoU(cm)
+    return iou_score
 
 def epoch_time(start_time, end_time):
     elapsed_time = end_time - start_time

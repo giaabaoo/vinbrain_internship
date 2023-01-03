@@ -1,10 +1,14 @@
 import pdb
 from models.unet import UNet
+from models.blazeneo.model import BlazeNeo
+from models.neounet.model import NeoUNet
+from models.doubleunet.model import DUNet
 import argparse
 from utils.train_utils import apply_transform, prepare_dataloaders, prepare_objectives
-from metrics import compute_CM, epoch_time, compute_IoU, compute_F1, compute_dice_coef
+from metrics import epoch_time, compute_IoU, compute_F1, compute_dice_coef
 import numpy as np
 import pandas as pd
+import torch.nn.functional as F
 from pathlib import Path
 import wandb
 import time
@@ -22,37 +26,91 @@ from utils.helper import get_args_parser
 def train(config, model, training_loader, optimizer, criterion):
     epoch_loss = 0
     model.train()
-    dice_coef_list = []
+    F1_list = []
+    IoU_list = []
     
     for sample in tqdm(training_loader, desc="Training", leave=False):
         images, masks = sample['image'], sample['mask']
-        if not config['transform']:
-            images = images.type(torch.FloatTensor)
-        images, masks = images.to(config['device']), masks.to(config['device'])
+        if "upsample" in config['backbone'].split("."):
+            input_size = images.size()[-1]
+            size_rates = [0.75, 1.25, 1]
+            train_sizes = [int(round(input_size*rate/32)*32) for rate in size_rates]
+            
+            for size in train_sizes:
+                if size != input_size:
+                    upsampled_images = F.upsample(images, size=(size, size), mode='nearest')
+                    upsampled_masks = F.upsample(masks.unsqueeze(1).type(torch.FloatTensor), size=(size, size), mode='nearest')
+                else:
+                    upsampled_images = images
+                    upsampled_masks = masks
+                    
+                upsampled_images, upsampled_masks = upsampled_images.to(config['device']), upsampled_masks.to(config['device'])
+                pdb.set_trace()
+                optimizer.zero_grad()
+                output = model.forward(upsampled_images)
+                loss = criterion(output, upsampled_masks)
+                loss.backward()
 
-        optimizer.zero_grad()
-        output = model(images)  # forward
-        probs = torch.softmax(output, dim=1)
-        predictions = torch.argmax(probs, dim=1)
-        
-        loss = criterion(output, masks)
+                optimizer.step() 
+                pdb.set_trace()
+                probs = torch.softmax(output, dim=1)
+                predictions = torch.argmax(probs, dim=1)
+                
+                F1_score = compute_F1(predictions, masks)
+                IoU_score = compute_IoU(predictions, masks)
+                F1_list.append(F1_score.cpu().numpy())
+                IoU_list.append(IoU_score.cpu().numpy())
+                epoch_loss += loss.item()
+        else:
+            if not config['transform']:
+                images = images.type(torch.FloatTensor)
+            images, masks = images.to(config['device']), masks.to(config['device'])
 
-        loss.backward()  # backward
-        optimizer.step()  # optimize
+            optimizer.zero_grad()
+            
+            
+            output = model(images)  # forward
+            
+            if "blazeneo" in config['backbone']:
+                output = output[1]
+            elif "neounet" in config['backbone']:
+                output = output[0]
+            
+            
+            if config['loss_function'] == 'CrossEntropy_TverskyLoss':
+                ce_loss = criterion[0](output, masks)
+                tversky_loss = criterion[1](output, masks)
+                loss = (ce_loss+tversky_loss)/2
+            elif config['loss_function'] == 'ActiveContourLoss':
+                soft_output = torch.softmax(output, dim=1)
+                loss = criterion(soft_output, masks)
+            else:
+                loss = criterion(output, masks)
 
-        dice_coef = compute_dice_coef(masks, predictions)
-        dice_coef_list.append(dice_coef.cpu().numpy())
-        epoch_loss += loss.item()
+            loss.backward()  # backward
+            optimizer.step()  # optimize
+            
+            probs = torch.softmax(output, dim=1)
+            predictions = torch.argmax(probs, dim=1)
+            F1_score = compute_F1(predictions, masks)
+            IoU_score = compute_IoU(predictions, masks)
+            F1_list.append(F1_score.cpu().numpy())
+            IoU_list.append(IoU_score.cpu().numpy())
+            epoch_loss += loss.item()
 
-    return epoch_loss / len(training_loader), np.mean(dice_coef_list)
+    if "upsample" in config['backbone'].split("."):
+        return epoch_loss / len(training_loader) * len(train_sizes), np.sum(F1_list)/(len(training_loader) * len(train_sizes)), np.sum(IoU_list)/(len(training_loader) * len(train_sizes))
+    else:
+        return epoch_loss / len(training_loader), np.mean(F1_list), np.mean(IoU_list)
 
 
 def evaluate(config, model, validation_loader, criterion):
     epoch_loss = 0
 
     model.eval()
-    dice_coef_list = []
-
+    F1_list = []
+    IoU_list = []
+    
     with torch.no_grad():
         for sample in tqdm(validation_loader, desc="Evaluating", leave=False):
             images, masks = sample['image'], sample['mask']
@@ -62,16 +120,34 @@ def evaluate(config, model, validation_loader, criterion):
             images, masks = images.to(
                 config['device']), masks.to(config['device'])
 
+           
             output = model(images)  # forward
+            
+            if "blazeneo" in config['backbone']:
+                output = output[1]
+            elif "neounet" in config['backbone']:
+                output = output[0]
+            
+            
+            if config['loss_function'] == 'CrossEntropy_TverskyLoss':
+                ce_loss = criterion[0](output, masks)
+                tversky_loss = criterion[1](output, masks)
+                loss = (ce_loss+tversky_loss)/2
+            elif config['loss_function'] == 'ActiveContourLoss':
+                soft_output = torch.softmax(output, dim=1)
+                loss = criterion(soft_output, masks)
+            else:
+                loss = criterion(output, masks)
+            
             probs = torch.softmax(output, dim=1)
             predictions = torch.argmax(probs, dim=1)
-
-            loss = criterion(output, masks)
-            dice_coef = compute_dice_coef(masks, predictions)
-            dice_coef_list.append(dice_coef.cpu().numpy())
+            F1_score = compute_F1(predictions, masks)
+            IoU_score = compute_IoU(predictions, masks)
+            F1_list.append(F1_score.cpu().numpy())
+            IoU_list.append(IoU_score.cpu().numpy())
             epoch_loss += loss.item()
 
-    return epoch_loss / len(validation_loader), np.mean(dice_coef_list)
+    return epoch_loss / len(validation_loader), np.mean(F1_list), np.mean(IoU_list)
 
 
 def train_and_evaluate(training_loader, validation_loader, model, criterion, optimizer, scheduler, config, start_epoch):
@@ -80,8 +156,8 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
     for epoch in range(start_epoch, start_epoch + config['num_epochs']):
         start_time = time.monotonic()
         
-        train_loss, train_dice_score = train(config, model, training_loader, optimizer, criterion)        
-        valid_loss, valid_dice_score = evaluate(config, model, validation_loader, criterion)
+        train_loss, train_dice_score, train_iou_score = train(config, model, training_loader, optimizer, criterion)        
+        valid_loss, valid_dice_score, valid_iou_score = evaluate(config, model, validation_loader, criterion)
         scheduler.step(valid_loss)
 
         if valid_loss < best_valid_loss:
@@ -101,17 +177,20 @@ def train_and_evaluate(training_loader, validation_loader, model, criterion, opt
         print(f"Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s")
         print("Training")
         print(
-            f"\t Dice Loss: {train_loss:.3f} | Dice score: {train_dice_score:.3f}")
+            f"\t Dice Loss: {train_loss:.3f} | Dice score: {train_dice_score:.3f} | IoU score: {train_iou_score:.3f}")
         print("Validating")
         print(
-            f"\t Dice Loss: {valid_loss:.3f} |  Dice score: {valid_dice_score:.3f}")
+            f"\t Dice Loss: {valid_loss:.3f} |  Dice score: {valid_dice_score:.3f} | IoU score: {valid_iou_score:.3f}")
         print("\n")
         wandb.log(
             {
                 "Train dice loss": train_loss,
                 "Train dice score": train_dice_score,
+                "Train IoU score": train_iou_score,
+                
                 "Val. dice loss": valid_loss,
                 "Val. dice score": valid_dice_score,
+                "Val. IoU score": valid_iou_score,
             }
         )
 
@@ -130,7 +209,16 @@ if __name__ == "__main__":
     training_loader, validation_loader = prepare_dataloaders(
         config, train_transform, valid_transform)
 
-    if config['backbone'] != "None":
+    if "unetplusplus" in config['backbone'].split("."):
+        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
+                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+    elif "blazeneo" in config['backbone']:
+        model = BlazeNeo()
+    elif "neounet" in config['backbone']:
+        model = NeoUNet(num_classes=3)
+    elif "doubleunet" in config['backbone']:
+        model = DUNet()
+    elif config['backbone'] != "None":
         model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
                          in_channels=3, classes=len(config['classes']), activation='sigmoid')
     else:

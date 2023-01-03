@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     transform = Compose(list_transforms)
     
-    sample_submission_path = "/home/dhgbao/VinBrain/Pneumothorax_Segmentation/dataset/dicom/stage_2_sample_submission.csv"
+    sample_submission_path = "/home/dhgbao/VinBrain/assignments/dataset/siim/annotations/stage_2_sample_submission.csv"
     df = pd.read_csv(sample_submission_path)
     
     if config['backbone'] == 'None':

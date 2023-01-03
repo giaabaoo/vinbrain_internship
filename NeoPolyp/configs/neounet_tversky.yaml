@@ -5,26 +5,26 @@ root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
 positive_only: False
 
-image_height: 512
-image_width: 512
+image_height: 480
+image_width: 640
 
-batch_size: 16
-loss_function: "CrossEntropyLoss"
+batch_size: 8
+loss_function: "smpTverskyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
-scheduler: 'ReduceLROnPlateau'
+scheduler: 'CosineAnnealingLR'
 T_max: 10
 step_size: 30
 gamma: 0.1
-backbone: "resnet34"
+backbone: "neounet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
 activation: 'sigmoid'
 
-transform: False
+transform: True
 num_epochs: 50
 device: 'cuda'
 continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/best.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/best.pt"
-csv_name: "default"
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet_tversky.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet_tversky.pt"
+csv_name: "neounet_tversky"

@@ -1,10 +1,12 @@
 from torch.utils.data import DataLoader
-from albumentations import Compose, Resize, Normalize
+from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate
 from albumentations.pytorch import ToTensorV2
 from dataset import NeoPolyp
 from torch import optim, nn
 import segmentation_models_pytorch as smp
 import timm.optim
+from .loss import NeoUNetLoss, ActiveContourLoss
+import cv2
 
 def apply_transform(config):
     valid_transform = Compose([
@@ -17,6 +19,14 @@ def apply_transform(config):
         train_transform = Compose([
             Resize(config['image_height'], config['image_width']),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
+            HorizontalFlip(p=0.5),
+            ShiftScaleRotate(
+                shift_limit=0,  # no resizing
+                scale_limit=0.1,
+                rotate_limit=10, # rotate
+                p=0.5,
+                border_mode=cv2.BORDER_CONSTANT
+            ),
             ToTensorV2(),
         ])
     else:
@@ -40,7 +50,17 @@ def prepare_objectives(config, model):
     elif config['loss_function'] == 'CrossEntropyLoss':
         criterion = nn.CrossEntropyLoss()
     elif config['loss_function'] == 'smpDiceLoss':
-        criterion = smp.losses.DiceLoss(mode='multilabel')
+        criterion = smp.losses.DiceLoss(mode='multiclass')
+    elif config['loss_function'] == 'smpFocalLoss':
+        criterion = smp.losses.FocalLoss(mode='multiclass')
+    elif config['loss_function'] == 'smpTverskyLoss':
+        criterion = smp.losses.TverskyLoss(mode='multiclass')
+    elif config['loss_function'] == 'CrossEntropy_TverskyLoss':
+        criterion = [nn.CrossEntropyLoss(), smp.losses.TverskyLoss(mode='multiclass')]
+    elif config['loss_function'] == 'NeoUNetLoss':
+        criterion = NeoUNetLoss()
+    elif config['loss_function'] == 'ActiveContourLoss':
+        criterion = ActiveContourLoss(config['device'])
 
     if config['optimizer'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])

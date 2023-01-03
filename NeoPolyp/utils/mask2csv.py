@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import cv2
 import os
+import pdb
 
 def rle_to_string(runs):
     return ' '.join(str(x) for x in runs)
@@ -48,6 +49,7 @@ def mask2string(dir):
         path = os.path.join(dir, image_id)
         print(path)
         img = cv2.imread(path)[:,:,::-1]
+        pdb.set_trace()
         h, w = img.shape[0], img.shape[1]
         for channel in range(2):
             ws.append(w)
@@ -60,13 +62,3 @@ def mask2string(dir):
         'strings': strings,
     }
     return r
-
-
-MASK_DIR_PATH = '' # change this to the path to your output mask folder
-dir = MASK_DIR_PATH
-res = mask2string(dir)
-df = pd.DataFrame(columns=['Id', 'Expected'])
-df['Id'] = res['ids']
-df['Expected'] = res['strings']
-
-df.to_csv(r'output.csv', index=False)

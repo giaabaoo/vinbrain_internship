@@ -13,7 +13,7 @@ import pydicom
 import os
 from PIL import Image, ImageDraw, ImageFont
 import albumentations as A
-from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize
+from utils.helper import get_concat_h, get_args_parser, postprocess, visualize
 import shutil
 
 if __name__ == "__main__":
@@ -33,7 +33,12 @@ if __name__ == "__main__":
         ToTensor(),
     ])
 
-    if config['backbone'] != "None":
+    if "unetplusplus" in config['backbone'].split("."):
+        model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
+                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+    elif "blazeneo" in config['backbone']:
+        model = BlazeNeo()
+    elif config['backbone'] != "None":
         model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
                          in_channels=3, classes=len(config['classes']), activation='sigmoid')
     else:
@@ -64,21 +69,20 @@ if __name__ == "__main__":
     prediction = torch.argmax(probs, dim=1).cpu().numpy()
 
     output = postprocess(prediction, image)
-
+    output_pil = Image.fromarray(output)
     image_name = image_path.split("/")[-1]
     ground_truth_path = os.path.join("/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/example_data/train_mask", image_name)
     
     gt = cv2.imread(ground_truth_path)
     gt = cv2.cvtColor(gt, cv2.COLOR_BGR2RGB)
     gt = Image.fromarray(gt)
-    output_pil = Image.fromarray(output)
 
     font = ImageFont.truetype("LiberationSans-Regular.ttf", 30)
     d1 = ImageDraw.Draw(gt)
-    d1.text((width/2 - 100, height-100), "Ground truth", fill=(255), font=font)
+    d1.text((width/2 - 100, height-100), "Ground truth", fill=(255, 255, 255), font=font)
 
     d2 = ImageDraw.Draw(output_pil)
-    d2.text((width/2 - 100, height-100), "Prediction", fill=(255), font=font)
+    d2.text((width/2 - 100, height-100), "Prediction", fill=(255, 255, 255), font=font)
 
     get_concat_h(output_pil, gt).save(f'results/hmasks.png')
 
