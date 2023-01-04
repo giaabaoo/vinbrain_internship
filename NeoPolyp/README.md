@@ -16,12 +16,12 @@ UNet + Efficient-net B4 | Focal Loss | 0.8 | 0.76 | Resize at 512 x 512
 **UNet++** + SE-Resnext101 | Focal Loss | 0.81 | 0.71 | Resize at 480 x 640
 **BlazeNeo** | Cross Entropy Loss | 0.89 | 0.76 | Resize at 480 x 640
 BlazeNeo | Focal Loss | 0.86 | 0.75 | Resize at 480 x 640
-BlazeNeo | Cross Entropy Loss | - | - | Upsampling with original size 352x352
+BlazeNeo | Cross Entropy Loss | 0.85 | 0.73 | Upsampling with original size 352x352
 **NeoUNet** | Cross Entropy Loss | 0.88 | 0.79 | Resize at 480 x 640
-NeoUNet | Tversky Loss | 0.88 | 0.76 | Resize at 480 x 640
+NeoUNet | Tversky Loss | 0.88 | 0.76 | Resize at 480 x 640a
 NeoUNet | CE + Tversky Mean Loss| 0.86 | 0.72 | Resize at 480 x 640
 NeoUNet | Active Contour Loss | 0.84 | 0.77 | Resize at 480 x 640
-**NeoUNet** | Cross Entropy Loss | - | - | Upsampling with original size 352x352
+NeoUNet | Cross Entropy Loss | 0.82 | 0.7 | Upsampling with original size 352x352
 **HarDNet** | Cross Entropy Loss | 0.88 | 0.8 (0.78) | Resize at 480 x 640
 HarDNet upsample | Cross Entropy Loss | 0.87 | 0.76 | Upsampling with original size 352x352
 **Focal UNet** | Cross Entropy Loss | 0.76 | 0.6 | Resize at 224 x 224
