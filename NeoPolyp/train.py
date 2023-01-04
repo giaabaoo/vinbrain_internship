@@ -28,7 +28,7 @@ def train(config, model, training_loader, optimizer, criterion):
         images, masks = sample['image'], sample['mask']
         if "upsample" in config['backbone'].split("."):
             input_size = images.size()[-1]
-            size_rates = [0.75, 1.25, 1]
+            size_rates = config['size_rates']
             train_sizes = [int(round(input_size*rate/32)*32) for rate in size_rates]
             
             for size in train_sizes:
@@ -46,6 +46,7 @@ def train(config, model, training_loader, optimizer, criterion):
                     output = output[1]
                 elif "neounet" in config['backbone']:
                     output = output[0]
+                    
                 loss = criterion(output, upsampled_masks)
                 loss.backward()
 
@@ -64,14 +65,12 @@ def train(config, model, training_loader, optimizer, criterion):
             images, masks = images.to(config['device']), masks.to(config['device'])
 
             optimizer.zero_grad()
-                        
             output = model(images)  # forward
             
             if "blazeneo" in config['backbone']:
                 output = output[1]
             elif "neounet" in config['backbone']:
                 output = output[0]
-            
             
             if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                 ce_loss = criterion[0](output, masks)
@@ -91,8 +90,8 @@ def train(config, model, training_loader, optimizer, criterion):
             loss.backward()  # backward
             optimizer.step()  # optimize
             
-            probs = torch.softmax(output, dim=1)
-            predictions = torch.argmax(probs, dim=1)
+            # probs = torch.softmax(output, dim=1)
+            predictions = torch.argmax(output, dim=1)
             F1_score = compute_F1(predictions, masks)
             IoU_score = compute_IoU(predictions, masks)
             F1_list.append(F1_score.cpu().numpy())

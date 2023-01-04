@@ -5,8 +5,8 @@ root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
 positive_only: False
 
-image_height: 352
-image_width: 352
+image_height: 480
+image_width: 480
 
 batch_size: 8
 loss_function: "CrossEntropyLoss"
@@ -18,6 +18,7 @@ backbone: "hardnet.upsample"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
 activation: 'sigmoid'
+size_rates: [2.5, 1, 2]
 
 transform: True
 num_epochs: 50

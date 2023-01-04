@@ -14,6 +14,7 @@ UNet + SE-Resnext101 | Active Contour Loss | 0.9 | 0.78 | Resize at 480 x 640
 UNet + Efficient-net B4 | Focal Loss | 0.8 | 0.76 | Resize at 512 x 512
 **DoubleUNet** | Cross Entropy Loss| 0.76 | 0.61 | Resize at 480 x 640
 **UNet++** + SE-Resnext101 | Focal Loss | 0.81 | 0.71 | Resize at 480 x 640
+UNet++ + ResNeSt200e | Cross Entropy Loss | 0.87 | 0.78 | Resize at 480 x 640
 **BlazeNeo** | Cross Entropy Loss | 0.89 | 0.76 | Resize at 480 x 640
 BlazeNeo | Focal Loss | 0.86 | 0.75 | Resize at 480 x 640
 BlazeNeo | Cross Entropy Loss | 0.85 | 0.73 | Upsampling with original size 352x352
@@ -24,6 +25,7 @@ NeoUNet | Active Contour Loss | 0.84 | 0.77 | Resize at 480 x 640
 NeoUNet | Cross Entropy Loss | 0.82 | 0.7 | Upsampling with original size 352x352
 **HarDNet** | Cross Entropy Loss | 0.88 | 0.8 (0.78) | Resize at 480 x 640
 HarDNet upsample | Cross Entropy Loss | 0.87 | 0.76 | Upsampling with original size 352x352
+HarDNet upsample | Cross Entropy Loss | - | - | Upsampling with original size 480x480
 **Focal UNet** | Cross Entropy Loss | 0.76 | 0.6 | Resize at 224 x 224
 Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 

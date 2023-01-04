@@ -20,7 +20,7 @@ backbone: "blazeneo.upsample"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
 activation: 'sigmoid'
-
+size_rates: [0.75, 1.25, 1]
 transform: True
 num_epochs: 100
 device: 'cuda'

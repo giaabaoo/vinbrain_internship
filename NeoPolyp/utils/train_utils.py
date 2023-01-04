@@ -93,7 +93,7 @@ def prepare_objectives(config, model, training_loader):
 def prepare_architecture(config):
     if "unetplusplus" in config['backbone'].split("."):
         model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+                         in_channels=3, classes=len(config['classes']), activation=config['activation'])
     elif "blazeneo" in config['backbone']:
         model = BlazeNeo()
     elif "neounet" in config['backbone']:

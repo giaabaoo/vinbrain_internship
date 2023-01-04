@@ -3,29 +3,25 @@ root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split
 root_valid_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid"
 root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid_mask"
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
-positive_only: False
 
-image_height: 352
-image_width: 352
+image_height: 480
+image_width: 640
 
-batch_size: 8
+batch_size: 4
 loss_function: "CrossEntropyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
-scheduler: 'CosineAnnealingLR'
-T_max: 10
-step_size: 30
-gamma: 0.1
-backbone: "neounet.upsample"
+scheduler: 'CosineAnnealingWarmRestarts'
+T_mult: 2
+backbone: "unetplusplus.timm-resnest200e"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
-activation: 'sigmoid'
-size_rates: [0.75, 1.25, 1]
+activation: 'softmax'
 
 transform: True
-num_epochs: 100
+num_epochs: 50
 device: 'cuda'
 continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet_upsample.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet_upsample.pt"
-csv_name: "neounet_upsample"
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/unetpp_resnest200e.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/unetpp_resnest200e.pt"
+csv_name: "unetpp_resnest200e"
