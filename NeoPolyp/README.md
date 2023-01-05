@@ -30,8 +30,9 @@ HarDNet | Cross Entropy Loss | 0.85 | 0.77 | Continue training at 960 x 1280
 **Focal UNet** | Cross Entropy Loss | 0.76 | 0.6 | Resize at 224 x 224
 Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 **DeepLabV3** Resnet101 | Cross Entropy Loss | 0.86 | 0.78 | Resize at 480 x 640
-**PraNet** | Cross Entropy Loss | 0.88 | 0.82 | Resize at 480 x 640
-PraNet | Cross Entropy Loss | - | - | Continue training
+**PraNet** | Cross Entropy Loss | 0.88 | 0.824 | Resize at 480 x 640
+PraNet | Cross Entropy Loss | 0.89 | 0.825 | Continue training
+PraNet | Cross Entropy Loss | - | - | Upsample with original size 352 x 352
 **SANet** | Cross Entropy Loss | 0.87 | 0.76 | Resize at 480 x 640
 
 
