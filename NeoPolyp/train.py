@@ -71,6 +71,10 @@ def train(config, model, training_loader, optimizer, criterion):
                 output = output[1]
             elif "neounet" in config['backbone']:
                 output = output[0]
+            elif "pranet" in config['backbone']:
+                output = output[0]
+            elif "deeplabv3" in config['backbone']:
+                output = output['out']
             
             if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                 ce_loss = criterion[0](output, masks)
@@ -90,8 +94,8 @@ def train(config, model, training_loader, optimizer, criterion):
             loss.backward()  # backward
             optimizer.step()  # optimize
             
-            # probs = torch.softmax(output, dim=1)
-            predictions = torch.argmax(output, dim=1)
+            probs = torch.softmax(output, dim=1)
+            predictions = torch.argmax(probs, dim=1)
             F1_score = compute_F1(predictions, masks)
             IoU_score = compute_IoU(predictions, masks)
             F1_list.append(F1_score.cpu().numpy())
@@ -127,7 +131,10 @@ def evaluate(config, model, validation_loader, criterion):
                 output = output[1]
             elif "neounet" in config['backbone']:
                 output = output[0]
-            
+            elif "pranet" in config['backbone']:
+                output = output[0]
+            elif "deeplabv3" in config['backbone']:
+                output = output['out']
             
             if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                 ce_loss = criterion[0](output, masks)

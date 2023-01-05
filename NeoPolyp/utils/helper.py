@@ -33,7 +33,16 @@ def mask_to_class(mask):
         output_mask = output_mask.type(torch.int64)
 
         return output_mask
-
+    
+def read_mask(mask):
+        mask = np.array(mask)
+        # cv2.imwrite("./visualization/original.png", mask)
+        output = np.zeros(mask.shape[:2])
+        output = np.where(mask[...,0] >127 , 1, output)
+        output = np.where(mask[...,1] >127 , 2, output)
+        
+        return torch.from_numpy(output.astype(np.uint8)).type(torch.int64)
+    
 def get_concat_h(im1, im2):
     dst = Image.new('RGB', (im1.width + im2.width, im1.height))
     dst.paste(im1, (0, 0))

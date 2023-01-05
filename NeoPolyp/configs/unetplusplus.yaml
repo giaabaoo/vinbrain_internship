@@ -19,7 +19,7 @@ gamma: 0.1
 backbone: "unetplusplus.se_resnext101_32x4d"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
-activation: 'sigmoid'
+activation: 'softmax'
 
 transform: True
 num_epochs: 50

@@ -90,6 +90,8 @@ if __name__ == "__main__":
             output = output[1]
         elif "neounet" in config['backbone']:
             output = output[0]
+        elif "pranet" in config['backbone']:
+                output = output[0]
             
         probs = torch.softmax(output, dim=1)
         prediction = torch.argmax(probs, dim=1)

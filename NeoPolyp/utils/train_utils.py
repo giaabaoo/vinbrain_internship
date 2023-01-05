@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate
+from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate, VerticalFlip, RandomRotate90
 from albumentations.pytorch import ToTensorV2
 from dataset import NeoPolyp
 from torch import optim, nn
@@ -13,6 +13,10 @@ from networks.neounet.model import NeoUNet
 from networks.doubleunet.model import DUNet
 from networks.FocalNet.main import FUnet
 from networks.hardnetmseg.model import HarDNetMSEG
+from networks.pranet.model import PraNet
+from networks.sanet.model import SANet
+from torchvision.models.segmentation import deeplabv3_resnet101
+
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -28,13 +32,14 @@ def apply_transform(config):
             Resize(config['image_height'], config['image_width']),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
             HorizontalFlip(p=0.5),
-            ShiftScaleRotate(
-                shift_limit=0,  # no resizing
-                scale_limit=0.1,
-                rotate_limit=10, # rotate
-                p=0.5,
-                border_mode=cv2.BORDER_CONSTANT
-            ),
+            VerticalFlip(p=0.5),
+            # ShiftScaleRotate(
+            #     shift_limit=0,  # no resizing
+            #     scale_limit=0.1,
+            #     rotate_limit=10, # rotate
+            #     p=0.5,
+            #     border_mode=cv2.BORDER_CONSTANT
+            # ),
             ToTensorV2(),
         ])
     else:
@@ -94,6 +99,9 @@ def prepare_architecture(config):
     if "unetplusplus" in config['backbone'].split("."):
         model = smp.UnetPlusPlus(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
                          in_channels=3, classes=len(config['classes']), activation=config['activation'])
+    elif "unet." in config['backbone']:
+        model = smp.Unet(config['backbone'].split(".")[1], encoder_weights=config['encoder_weights'],
+                         in_channels=3, classes=len(config['classes']), activation=config['activation'])
     elif "blazeneo" in config['backbone']:
         model = BlazeNeo()
     elif "neounet" in config['backbone']:
@@ -104,9 +112,15 @@ def prepare_architecture(config):
         model = FUnet()
     elif "hardnet" in config['backbone']:
         model = HarDNetMSEG()
+    elif "deeplabv3_resnet101" in config['backbone']:
+        model = deeplabv3_resnet101(num_classes=len(config['classes']))
+    elif "pranet" in config['backbone']:
+        model = PraNet()
+    elif "sanet" in config['backbone']:
+        model = SANet(num_classes=len(config['classes']))
     elif config['backbone'] != "None":
         model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
-                         in_channels=3, classes=len(config['classes']), activation='sigmoid')
+                         in_channels=3, classes=len(config['classes']), activation=config['activation'])
     else:
         model = UNet(n_channels=3, n_classes=3)
         

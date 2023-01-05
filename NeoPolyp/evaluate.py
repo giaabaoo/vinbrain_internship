@@ -35,6 +35,10 @@ def evaluate(config, model, validation_loader):
                 output = output[1]
             elif "neounet" in config['backbone']:
                 output = output[0]
+            elif "pranet" in config['backbone']:
+                output = output[0]
+            elif "deeplabv3" in config['backbone']:
+                output = output['out']
                 
             probs = torch.softmax(output, dim=1)
             predictions = torch.argmax(probs, dim=1)

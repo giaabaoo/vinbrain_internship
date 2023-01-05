@@ -138,4 +138,6 @@ example_data/
 results/
 visualization/
 submission/
-pretrained_focal
+pretrained_focal/
+*.pth
+*.pt

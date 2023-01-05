@@ -107,4 +107,3 @@ class NeoUNet(nn.Module):
         out_3 = F.interpolate(out_3, size=output_size, mode="bilinear")
 
         return out_0, out_1, out_2, out_3
-1

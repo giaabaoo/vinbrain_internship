@@ -5,26 +5,24 @@ root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
 positive_only: False
 
-image_height: 512
-image_width: 512
+image_height: 480
+image_width: 640
 
 batch_size: 16
-loss_function: "smpFocalLoss"
+loss_function: "CrossEntropyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
-scheduler: 'ReduceLROnPlateau'
+scheduler: 'CosineAnnealingLR'
 T_max: 10
-step_size: 30
-gamma: 0.1
-backbone: "se_resnext101_32x4d"
+backbone: "pranet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
-activation: 'softmax'
+activation: 
 
 transform: True
 num_epochs: 50
 device: 'cuda'
-continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/resnext101.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/resnext101.pt"
-csv_name: "se_resnext101"
+continue_training: True
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_continue.pt"
+csv_name: "pranet_continue"

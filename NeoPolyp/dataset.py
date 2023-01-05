@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import matplotlib
 import pdb
+from utils.helper import read_mask
 
 ALPHA = 0.8
 BETA = 1-ALPHA
@@ -45,7 +46,8 @@ class NeoPolyp(Dataset):
             image = augmented['image']
             mask = augmented['mask']
         
-        mask = self.mask_to_class(mask)
+        # mask = self.mask_to_class(mask)
+        mask = read_mask(mask)
         # mask = np.stack((mask, ) * 3, axis=-1).T
         sample = {'image_name': image_name, 'image': image, 'mask': mask}
         
@@ -53,6 +55,7 @@ class NeoPolyp(Dataset):
     
     def mask_to_class(self, mask):
         binary_mask = np.array(mask)
+        
         binary_mask = cv2.erode(binary_mask, np.ones((5, 5), np.uint8)) 
         binary_mask[:,:,2] = 0
         binary_mask = (binary_mask != 0).astype(np.uint8)
@@ -65,9 +68,11 @@ class NeoPolyp(Dataset):
         # cv2.imwrite("./visualization/red.png", r)
         # cv2.imwrite("./visualization/green.png", g)
         # cv2.imwrite("./visualization/blue.png", b)
+        # cv2.imwrite("./visualization/original.png", np.array(mask))
         
         # convert colors to "flat" labels
         rgb = np.array(binary_mask)
+        
         output_mask = np.zeros((rgb.shape[0], rgb.shape[1]))
 
         for k,v in self.LABEL_TO_COLOR.items():
@@ -121,8 +126,9 @@ class EvalNeoPolyp(Dataset):
         if self.transform:
             augmented = self.transform(image=image)
             image = augmented['image']
-        
-        mask = self.mask_to_class(mask)
+            
+        # mask = self.mask_to_class(mask)
+        mask = read_mask(mask)
         sample = {'image_name': image_name, 'image': image, 'mask': mask}
         
         return sample
@@ -134,14 +140,16 @@ class EvalNeoPolyp(Dataset):
         binary_mask = (binary_mask != 0).astype(np.uint8)
         binary_mask *= 255
         
-        # r = np.array(binary_mask[:,:,0])
-        # g = np.array(binary_mask[:,:,1])
-        # b = np.array(binary_mask[:,:,2])
+        r = np.array(binary_mask[:,:,0])
+        g = np.array(binary_mask[:,:,1])
+        b = np.array(binary_mask[:,:,2])
         
-        # cv2.imwrite("./visualization/red.png", r)
-        # cv2.imwrite("./visualization/green.png", g)
-        # cv2.imwrite("./visualization/blue.png", b)
-        
+        cv2.imwrite("./visualization/red.png", r)
+        cv2.imwrite("./visualization/green.png", g)
+        cv2.imwrite("./visualization/blue.png", b)
+        cv2.imwrite("./visualization/original.png", np.array(mask))
+        print(np.unique(binary_mask[:,:,0]))
+        print(np.unique(binary_mask[:,:,1]))
         # convert colors to "flat" labels
         rgb = np.array(binary_mask)
         output_mask = np.zeros((rgb.shape[0], rgb.shape[1]))
@@ -156,10 +164,10 @@ class EvalNeoPolyp(Dataset):
 
 
 if __name__ == "__main__":
-    root_image_path = "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/example_data/train"
-    root_label_path = "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/example_data/train_mask"
-    # root_image_path = "/home/dhgbao/VinBrain/assignments/others_code/unet-multiclass-pytorch/data/images_train/images"
-    # root_label_path = "/home/dhgbao/VinBrain/assignments/others_code/unet-multiclass-pytorch/data/images_train/masks"
+    # root_image_path = "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/example_data/train"
+    # root_label_path = "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/example_data/train_mask"
+    root_image_path = "../../dataset/NeoPolyp/split/train"
+    root_label_path = "../../dataset/NeoPolyp/split/train_mask"
 
     transform = Compose([
         Resize(512, 512, interpolation=cv2.INTER_NEAREST),
@@ -167,7 +175,7 @@ if __name__ == "__main__":
         ToTensorV2(),
     ])
 
-    dataloader = NeoPolyp(
+    dataloader = EvalNeoPolyp(
         root_image_path, root_label_path, transform=transform)
     for idx in tqdm(range(len(dataloader))):
         sample = dataloader[idx]
