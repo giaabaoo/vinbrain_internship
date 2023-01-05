@@ -1,12 +1,12 @@
-root_train_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train"
-root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_mask"
+root_train_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug"
+root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask"
 root_valid_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid"
 root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid_mask"
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
 positive_only: False
 
 image_height: 480
-image_width: 640
+image_width: 480
 
 batch_size: 16
 loss_function: "CrossEntropyLoss"
@@ -14,16 +14,13 @@ optimizer: "Nadam"
 learning_rate: 0.0001
 scheduler: 'CosineAnnealingLR'
 T_max: 10
-backbone: "pranet"
+backbone: "sanet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
-encoder_weights: 'imagenet'
-activation: 
-probability_correction_strategy: False
 
 transform: True
 num_epochs: 50
 device: 'cuda'
 continue_training: True
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_continue.pt"
-csv_name: "pranet_continue"
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/sanet.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/sanet_aug.pt"
+csv_name: "sanet_aug"

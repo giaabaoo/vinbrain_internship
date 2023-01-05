@@ -12,7 +12,7 @@ import pandas as pd
 import os
 from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize
 from utils.train_utils import prepare_architecture
-
+import torch.nn.functional as F
 
 LABEL_TO_COLOR = {0:[0,0,0], 1:[255,0,0], 2:[0,255,0]}
 
@@ -123,10 +123,17 @@ if __name__ == "__main__":
                 output = output[0]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
-            
-        probs = torch.softmax(output, dim=1)
-        prediction = torch.argmax(probs, dim=1)
         
+        if config['probability_correction_strategy']:
+            pred  = F.interpolate(output, size=(image_transform.shape[-2], image_transform.shape[-1]), mode='bilinear', align_corners=True)
+            for i in range(3):
+                pred[:,i,:,:][torch.where(pred[:,i,:,:]>0)] /= (pred[:,i,:,:]>0).float().mean()
+                pred[:,i,:,:][torch.where(pred[:,i,:,:]<0)] /= (pred[:,i,:,:]<0).float().mean()
+            probs = torch.softmax(pred, dim=1)
+        else:
+            probs = torch.softmax(output, dim=1)
+        prediction = torch.argmax(probs, dim=1)
+            
         # pdb.set_trace()
         
         output = postprocess(prediction.cpu().numpy(), image)

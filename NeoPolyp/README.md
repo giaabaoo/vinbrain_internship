@@ -32,8 +32,11 @@ Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 **DeepLabV3** Resnet101 | Cross Entropy Loss | 0.86 | 0.78 | Resize at 480 x 640
 **PraNet** | Cross Entropy Loss | 0.88 | 0.824 | Resize at 480 x 640
 PraNet | Cross Entropy Loss | 0.89 | 0.825 | Continue training
-PraNet | Cross Entropy Loss | - | - | Upsample with original size 352 x 352
+PraNet | Active Contour Loss | 0.9 | 0.823 | Continue training with best CE ckpt
+PraNet | Cross Entropy Loss | 0.895 | 0.795 | Continue training with best CE ckpt + color transfer
+PraNet | Cross Entropy Loss | - | - | Continue training with best CE ckpt + color transfer 400
 **SANet** | Cross Entropy Loss | 0.87 | 0.76 | Resize at 480 x 640
+SANet | Cross Entropy Loss | 0.904 | 0.814 | Continue training with best CE ckpt + color transfer
 
 
 ## DONE:

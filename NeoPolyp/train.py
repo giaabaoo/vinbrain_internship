@@ -30,6 +30,7 @@ def train(config, model, training_loader, optimizer, criterion):
             input_size = images.size()[-1]
             size_rates = config['size_rates']
             train_sizes = [int(round(input_size*rate/32)*32) for rate in size_rates]
+            pdb.set_trace()
             
             for size in train_sizes:
                 if size != input_size:
@@ -46,6 +47,10 @@ def train(config, model, training_loader, optimizer, criterion):
                     output = output[1]
                 elif "neounet" in config['backbone']:
                     output = output[0]
+                elif "pranet" in config['backbone']:
+                    output = output[0]
+                elif "deeplabv3" in config['backbone']:
+                    output = output['out']
                     
                 loss = criterion(output, upsampled_masks)
                 loss.backward()
@@ -96,6 +101,7 @@ def train(config, model, training_loader, optimizer, criterion):
             
             probs = torch.softmax(output, dim=1)
             predictions = torch.argmax(probs, dim=1)
+            pdb.set_trace()
             F1_score = compute_F1(predictions, masks)
             IoU_score = compute_IoU(predictions, masks)
             F1_list.append(F1_score.cpu().numpy())
@@ -233,8 +239,8 @@ if __name__ == "__main__":
     else:
         epoch = 0
 
-    wandb.init(project="neopolyp", entity="_giaabaoo_", config=config)
-    wandb.watch(model)
+    # wandb.init(project="neopolyp", entity="_giaabaoo_", config=config)
+    # wandb.watch(model)
     # print(summary(model, input_size=(3, 512, 512)))
     train_and_evaluate(training_loader, validation_loader,
                        model, criterion, optimizer, scheduler, config, epoch)

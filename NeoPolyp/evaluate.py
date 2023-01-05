@@ -2,6 +2,7 @@ from torch.utils.data import DataLoader
 import torch
 import yaml
 from dataset import EvalNeoPolyp
+import torch.nn.functional as F
 from tqdm import tqdm
 import pdb
 import numpy as np
@@ -40,10 +41,18 @@ def evaluate(config, model, validation_loader):
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
                 
-            probs = torch.softmax(output, dim=1)
+            if config['probability_correction_strategy']:
+                pred  = F.interpolate(output, size=(images.shape[-2], images.shape[-1]), mode='bilinear', align_corners=True)
+                for i in range(3):
+                    pred[:,i,:,:][torch.where(pred[:,i,:,:]>0)] /= (pred[:,i,:,:]>0).float().mean()
+                    pred[:,i,:,:][torch.where(pred[:,i,:,:]<0)] /= (pred[:,i,:,:]<0).float().mean()
+                probs = torch.softmax(pred, dim=1)
+            else:
+                probs = torch.softmax(output, dim=1)
+                
             predictions = torch.argmax(probs, dim=1)
-                        
             predictions = predictions.detach().cpu().numpy()[0,:,:]
+                
             height, width = masks.shape[-2], masks.shape[-1]
 
             if predictions.shape != (height, width):
