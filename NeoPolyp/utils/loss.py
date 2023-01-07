@@ -1,16 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import segmentation_models_pytorch as smp
 import pdb
 
-def split_mask(neo_mask):
-    ignore_mask = neo_mask[:, [0], :, :]
-    # sum of ignore, neo and non-neo
-    polyp_mask = ignore_mask + neo_mask[:, [1], :, :] + neo_mask[:, [2], :, :]
-    # neo, non-neo and background
-    neo_mask = neo_mask[:, [1, 2, 3], :, :]
+# def split_mask(neo_mask):
+#     ignore_mask = neo_mask[:, [0], :, :]
+#     # sum of ignore, neo and non-neo
+#     polyp_mask = ignore_mask + neo_mask[:, [1], :, :] + neo_mask[:, [2], :, :]
+#     # neo, non-neo and background
+#     neo_mask = neo_mask[:, [1, 2, 3], :, :]
     
-    return polyp_mask, neo_mask, ignore_mask
+#     return polyp_mask, neo_mask, ignore_mask
 
 
 def CELoss(inputs, targets, ignore=None):
@@ -100,22 +101,22 @@ class HarDNetMSEGLoss(nn.Module):
         return main_loss
 
 
-class PraNetLoss(nn.Module):
-    __name__ = 'pranet_loss'
+# class PraNetLoss2(nn.Module):
+#     __name__ = 'pranet_loss'
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
 
-    def forward(self, y_prs, mask):
-        main_loss = 0
-        for y_pr in y_prs:
-            polyp_mask, neo_mask, ignore_mask = split_mask(mask)
+#     def forward(self, y_prs, mask):
+#         main_loss = 0
+#         for y_pr in y_prs:
+#             polyp_mask, neo_mask, ignore_mask = split_mask(mask)
 
-            ce_loss = CELoss(y_pr, neo_mask, ignore=ignore_mask)
-            ft_loss = FocalTverskyLoss(y_pr, neo_mask, ignore=ignore_mask)
-            main_loss += ce_loss + ft_loss
+#             ce_loss = CELoss(y_pr, neo_mask, ignore=ignore_mask)
+#             ft_loss = FocalTverskyLoss(y_pr, neo_mask, ignore=ignore_mask)
+#             main_loss += ce_loss + ft_loss
 
-        return main_loss
+#         return main_loss
 
 
 class NeoUNetLoss(nn.Module):
@@ -160,3 +161,44 @@ class ActiveContourLoss(nn.Module):
         active = torch.sum(yTrueOnehot * (1 - y_pred) + (1 - yTrueOnehot) * y_pred, dim=[-2, -1])
         loss = torch.sum(active * self.class_weight)
         return loss / (torch.sum(self.class_weight) * y_true.size(0) * y_true.size(-2) * y_true.size(-1))
+
+# class PraNetLoss(nn.Module):
+#     def __init__(self):
+#         super().__init__()
+#     def forward(self, pred, mask):   
+#         pdb.set_trace()
+#         weit = 1 + 5*torch.abs(F.avg_pool2d(mask.type(torch.FloatTensor).to('cuda'), kernel_size=31, stride=1, padding=15) - mask.type(torch.FloatTensor).to('cuda'))
+        
+#         criterion = nn.CrossEntropyLoss(reduce='None')
+#         wbce = criterion(pred, mask)
+#         wbce = (weit*wbce).sum(dim=(-2, -1)) / weit.sum(dim=(-2, -1))
+
+#         # pred = torch.sigmoid(pred)
+#         probs = torch.softmax(pred, dim=1)
+#         pred = torch.argmax(probs, dim=1)
+        
+#         inter = ((pred * mask)*weit).sum(dim=(-2, -1))
+#         union = ((pred + mask)*weit).sum(dim=(-2, -1))
+#         wiou = 1 - (inter + 1)/(union - inter+1)
+#         return (wbce + wiou).mean() 
+
+class PraNetLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, pred, mask):  
+        criterion = [nn.CrossEntropyLoss(), smp.losses.DiceLoss(mode='multiclass')]
+        ce_loss = criterion[0](pred, mask)
+        dice_loss = criterion[1](pred, mask)
+
+        # loss =(ce_loss +  dice_loss).mean()
+        loss = ce_loss +  dice_loss
+        return loss
+    
+class MultiCELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, pred, mask):  
+        criterion = nn.CrossEntropyLoss()
+        ce_loss = criterion(pred, mask)
+        loss = ce_loss
+        return loss

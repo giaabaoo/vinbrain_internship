@@ -5,7 +5,7 @@ from dataset import NeoPolyp
 from torch import optim, nn
 import segmentation_models_pytorch as smp
 import timm.optim
-from .loss import NeoUNetLoss, ActiveContourLoss
+from .loss import NeoUNetLoss, ActiveContourLoss, PraNetLoss, MultiCELoss
 import cv2
 from networks.unet import UNet
 from networks.blazeneo.model import BlazeNeo
@@ -76,7 +76,11 @@ def prepare_objectives(config, model, training_loader):
         criterion = ActiveContourLoss(config['device'])
     elif config['loss_function'] == 'CE_DiceLoss':
         criterion = [nn.CrossEntropyLoss(), smp.losses.DiceLoss(mode='multiclass')]
-
+    elif config['loss_function'] == 'PraNetLoss':
+        criterion = PraNetLoss()
+    elif config['loss_function'] == 'MultiCELoss':
+        criterion = MultiCELoss()
+        
     if config['optimizer'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=config['learning_rate'])
     elif config['optimizer'] == 'SGD':

@@ -1,0 +1,29 @@
+{'root_train_image_path': '/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_400', 'root_train_label_path': '/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask_400', 'root_valid_image_path': '/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid', 'root_valid_label_path': '/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid_mask', 'root_test_image_path': '/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test', 'positive_only': False, 'image_height': 480, 'image_width': 480, 'batch_size': 4, 'loss_function': 'CrossEntropyLoss', 'optimizer': 'Nadam', 'learning_rate': 0.0001, 'scheduler': 'CosineAnnealingWarmRestarts', 'T_mult': 2, 'backbone': 'pranet', 'classes': ['background', 'neoplastic', 'non-neoplastic'], 'encoder_weights': 'imagenet', 'size_rates': [2.5, 1, 2], 'activation': None, 'probability_correction_strategy': False, 'transform': True, 'num_epochs': 100, 'device': 'cuda', 'continue_training': False, 'trained_weights': '/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_upsample.pt', 'save_checkpoint': '/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_upsample.pt', 'csv_name': 'pranet_aug_upsample'}
+Traceback (most recent call last):
+  File "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/train.py", line 263, in <module>
+    model = prepare_architecture(config)
+  File "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/utils/train_utils.py", line 122, in prepare_architecture
+    model = PraNet()
+  File "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/networks/pranet/model.py", line 103, in __init__
+    self.resnet = res2net50_v1b_26w_4s(pretrained=True)
+  File "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/networks/pranet/Res2Net_v1b.py", line 203, in res2net50_v1b_26w_4s
+    model_state = torch.hub.load_state_dict_from_url(model_urls['res2net50_v1b_26w_4s'])
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/hub.py", line 735, in load_state_dict_from_url
+    return torch.load(cached_file, map_location=map_location)
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 795, in load
+    return _legacy_load(opened_file, map_location, pickle_module, **pickle_load_args)
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 1012, in _legacy_load
+    result = unpickler.load()
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/pickle.py", line 1213, in load
+    dispatch[key[0]](self)
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/pickle.py", line 1254, in load_binpersid
+    self.append(self.persistent_load(pid))
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 958, in persistent_load
+    wrap_storage=restore_location(obj, location),
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 215, in default_restore_location
+    result = fn(storage, location)
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 182, in _cuda_deserialize
+    device = validate_cuda_device(location)
+  File "/home/dhgbao/miniconda3/envs/intern/lib/python3.10/site-packages/torch/serialization.py", line 166, in validate_cuda_device
+    raise RuntimeError('Attempting to deserialize object on a CUDA '
+RuntimeError: Attempting to deserialize object on a CUDA device but torch.cuda.is_available() is False. If you are running on a CPU-only machine, please use torch.load with map_location=torch.device('cpu') to map your storages to the CPU.

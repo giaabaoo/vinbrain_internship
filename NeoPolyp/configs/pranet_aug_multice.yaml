@@ -6,22 +6,24 @@ root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/
 positive_only: False
 
 image_height: 480
-image_width: 480
+image_width: 640
 
 batch_size: 16
-loss_function: "CrossEntropyLoss"
+loss_function: "MultiCELoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
 scheduler: 'CosineAnnealingWarmRestarts'
 T_mult: 2
-backbone: "sanet"
+backbone: "pranet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
+encoder_weights: 'imagenet'
+activation: 
 probability_correction_strategy: False
 
 transform: True
-num_epochs: 50
+num_epochs: 100
 device: 'cuda'
-continue_training: True
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/sanet.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/sanet_aug.pt"
-csv_name: "sanet_aug"
+continue_training: False
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_multice.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_multice.pt"
+csv_name: "pranet_aug_multice"

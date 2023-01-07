@@ -41,6 +41,7 @@ if __name__ == "__main__":
         cv2.imwrite(os.path.join(train_aug_folder, aug_image_name), image)
         shutil.copy(os.path.join(train_mask_folder, train_image1_name), os.path.join(train_aug_mask_folder,  aug_image_name))
         
-    for train_image1_name in tqdm(aug_image_names):
+    for train_image1_name in tqdm(all_image_names):
+        train_image1_path = os.path.join(train_folder, train_image1_name)
         shutil.copy(train_image1_path, os.path.join(train_aug_folder, train_image1_name))
         shutil.copy(os.path.join(train_mask_folder, train_image1_name), os.path.join(train_aug_mask_folder, train_image1_name))

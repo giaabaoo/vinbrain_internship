@@ -30,7 +30,6 @@ def train(config, model, training_loader, optimizer, criterion):
             input_size = images.size()[-1]
             size_rates = config['size_rates']
             train_sizes = [int(round(input_size*rate/32)*32) for rate in size_rates]
-            pdb.set_trace()
             
             for size in train_sizes:
                 if size != input_size:
@@ -43,16 +42,37 @@ def train(config, model, training_loader, optimizer, criterion):
                 upsampled_images, upsampled_masks = upsampled_images.to(config['device']), upsampled_masks.to(config['device'])
                 optimizer.zero_grad()
                 output = model(upsampled_images)
+                
                 if "blazeneo" in config['backbone']:
                     output = output[1]
                 elif "neounet" in config['backbone']:
                     output = output[0]
                 elif "pranet" in config['backbone']:
-                    output = output[0]
+                    output, output4, output3, output2  = output
+                    # output5, output4, output3, output  = output
                 elif "deeplabv3" in config['backbone']:
                     output = output['out']
+                
+                if config['loss_function'] == 'CrossEntropy_TverskyLoss':
+                    ce_loss = criterion[0](output, masks)
+                    tversky_loss = criterion[1](output, masks)
+                    loss = (ce_loss+tversky_loss)/2
+                elif config['loss_function'] == 'ActiveContourLoss':
+                    soft_output = torch.softmax(output, dim=1)
+                    loss = criterion(soft_output, masks)
+                elif config['loss_function'] == 'CE_DiceLoss': 
+                    ce_loss = criterion[0](output, masks)
+                    dice_loss = criterion[1](output, masks)
                     
-                loss = criterion(output, upsampled_masks)
+                    loss = 0.4 * ce_loss + 0.6 * dice_loss
+                elif config['loss_function'] == 'PraNetLoss': 
+                    loss5 = criterion(output, masks)
+                    loss4 = criterion(output4, masks)
+                    loss3 = criterion(output3, masks)
+                    loss2 = criterion(output2, masks)
+                    loss = loss2 + loss3 + loss4 + loss5
+                else:
+                    loss = criterion(output, masks)
                 loss.backward()
 
                 optimizer.step() 
@@ -77,7 +97,8 @@ def train(config, model, training_loader, optimizer, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output = output[0]
+                output, output4, output3, output2  = output
+                # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             
@@ -93,6 +114,12 @@ def train(config, model, training_loader, optimizer, criterion):
                 dice_loss = criterion[1](output, masks)
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
+            elif config['loss_function'] == 'PraNetLoss': 
+                loss5 = criterion(output, masks)
+                loss4 = criterion(output4, masks)
+                loss3 = criterion(output3, masks)
+                loss2 = criterion(output2, masks)
+                loss = loss2 + loss3 + loss4 + loss5
             else:
                 loss = criterion(output, masks)
 
@@ -101,7 +128,6 @@ def train(config, model, training_loader, optimizer, criterion):
             
             probs = torch.softmax(output, dim=1)
             predictions = torch.argmax(probs, dim=1)
-            pdb.set_trace()
             F1_score = compute_F1(predictions, masks)
             IoU_score = compute_IoU(predictions, masks)
             F1_list.append(F1_score.cpu().numpy())
@@ -138,7 +164,8 @@ def evaluate(config, model, validation_loader, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output = output[0]
+                output, output4, output3, output2  = output
+                # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             
@@ -154,6 +181,12 @@ def evaluate(config, model, validation_loader, criterion):
                 dice_loss = criterion[1](output, masks)
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
+            elif config['loss_function'] == 'PraNetLoss': 
+                loss5 = criterion(output, masks)
+                loss4 = criterion(output4, masks)
+                loss3 = criterion(output3, masks)
+                loss2 = criterion(output2, masks)
+                loss = loss2 + loss3 + loss4 + loss5
             else:
                 loss = criterion(output, masks)
             
@@ -239,8 +272,8 @@ if __name__ == "__main__":
     else:
         epoch = 0
 
-    # wandb.init(project="neopolyp", entity="_giaabaoo_", config=config)
-    # wandb.watch(model)
+    wandb.init(project="neopolyp", entity="_giaabaoo_", config=config)
+    wandb.watch(model)
     # print(summary(model, input_size=(3, 512, 512)))
     train_and_evaluate(training_loader, validation_loader,
                        model, criterion, optimizer, scheduler, config, epoch)
