@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .Res2Net_v1b import res2net50_v1b_26w_4s
+from .Res2Net_v1b import res2net50_v1b_26w_4s, res2net101_v1b_26w_4s, res2net152_v1b_26w_4s
 import pdb
 
 class BasicConv2d(nn.Module):
@@ -100,7 +100,9 @@ class PraNet(nn.Module):
     def __init__(self, n_class=3, channel=32):
         super(PraNet, self).__init__()
         # ---- ResNet Backbone ----
-        self.resnet = res2net50_v1b_26w_4s(pretrained=True)
+        # self.resnet = res2net152_v1b_26w_4s(pretrained=True)
+        self.resnet = res2net101_v1b_26w_4s(pretrained=True)
+        # self.resnet = res2net50_v1b_26w_4s(pretrained=True)
         # ---- Receptive Field Block like module ----
         self.rfb2_1 = RFB_modified(512, channel)
         self.rfb3_1 = RFB_modified(1024, channel)

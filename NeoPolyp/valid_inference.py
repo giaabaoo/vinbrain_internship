@@ -11,31 +11,14 @@ import argparse
 from tqdm import tqdm
 import os
 from PIL import Image, ImageDraw, ImageFont
-from utils.helper import get_concat_h, get_args_parser, valid_postprocess, visualize
+from utils.helper import get_concat_h, get_args_parser, valid_postprocess, visualize, read_mask, refine_mask
 from utils.train_utils import prepare_architecture
+import torch.nn.functional as F
+
 
 LABEL_TO_COLOR = {0:[0,0,0], 1:[255,0,0], 2:[0,255,0]}
-
-def mask_to_class(mask):
-    binary_mask = np.array(mask)
-    binary_mask = np.array(mask)
-    binary_mask = cv2.erode(binary_mask, np.ones((5, 5), np.uint8)) 
-    binary_mask[:,:,2] = 0
-    binary_mask = (binary_mask != 0).astype(np.uint8)
-    binary_mask *= 255
     
-    rgb = np.array(binary_mask)
-    output_mask = np.zeros((rgb.shape[0], rgb.shape[1]))
-
-    for k,v in LABEL_TO_COLOR.items():
-        output_mask[np.all(rgb==v, axis=2)] = k
-        
-    output_mask = torch.from_numpy(output_mask)
-    output_mask = output_mask.type(torch.int64)
-    
-    return output_mask
 if __name__ == "__main__":
-    
 
     parser = argparse.ArgumentParser(
         "NeoPolyp inference script", parents=[get_args_parser()])
@@ -52,17 +35,17 @@ if __name__ == "__main__":
     ])
 
     model = prepare_architecture(config)
-    backbone = config['backbone'] 
+    backbone = config['csv_name'] 
     Path(f"./results/{backbone}/hmasks").mkdir(parents=True, exist_ok=True)
     Path(f"./results/{backbone}/valid_blend").mkdir(parents=True, exist_ok=True)
     Path(f"./results/{backbone}/valid_mask").mkdir(parents=True, exist_ok=True)
-    weights_path = config['save_checkpoint']
+    weights_path = config['save_checkpoint'] 
     print("Inferencing using ", weights_path)
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
     
-    path = config['root_valid_image_path']
-    # path = "./example_data/valid"
+    # path = config['root_valid_image_path']
+    path = "./example_data/valid"
     # Inference on all images
     for image_name in tqdm(os.listdir(path)):
         image = cv2.imread(os.path.join(path, image_name))
@@ -78,25 +61,41 @@ if __name__ == "__main__":
         image_transform = augmented['image']
         mask = augmented['mask']
 
-        mask = mask_to_class(mask).to(config['device'])
+        mask = read_mask(mask).to(config['device'])
         
-        if not config['transform']:
-            image_transform = image_transform.type(torch.FloatTensor)
-        image_transform = image_transform.unsqueeze(0).to(config['device'])
+        with torch.no_grad():
+            if not config['transform']:
+                image_transform = image_transform.type(torch.FloatTensor)
+            image_transform = image_transform.unsqueeze(0).to(config['device'])
 
-        output = model(image_transform)
-        
-        if "blazeneo" in config['backbone']:
-            output = output[1]
-        elif "neounet" in config['backbone']:
-            output = output[0]
-        elif "pranet" in config['backbone']:
+            output = model(image_transform)
+            if "blazeneo" in config['backbone']:
+                output = output[1]
+            elif "neounet" in config['backbone']:
                 output = output[0]
+            elif "pranet" in config['backbone']:
+                output  = output[0]
+                # output  = output[-1]
+            elif "deeplabv3" in config['backbone']:
+                output = output['out']
+        
+        if config['probability_correction_strategy']:
+            pred  = F.interpolate(output, size=(image_transform.shape[-2], image_transform.shape[-1]), mode='bilinear', align_corners=True)
+            for i in range(3):
+                pred[:,i,:,:][torch.where(pred[:,i,:,:]>0)] /= (pred[:,i,:,:]>0).float().mean()
+                pred[:,i,:,:][torch.where(pred[:,i,:,:]<0)] /= (pred[:,i,:,:]<0).float().mean()
+            probs = torch.softmax(pred, dim=1)
+        else:
+            probs = torch.softmax(output, dim=1)
             
-        probs = torch.softmax(output, dim=1)
         prediction = torch.argmax(probs, dim=1)
-        dice_coef = compute_dice_coef(prediction, mask).cpu().numpy()
+        
+        
         output = valid_postprocess(prediction.cpu().numpy(), image)
+        
+        ### refine_mask by following the rule: 1 label per polyp only
+        output = refine_mask(image_name, output)
+        dice_coef = compute_dice_coef(prediction, mask).cpu().numpy()
         
         cv2.imwrite(f"./results/{backbone}/valid_mask/{image_name}", output)
         # pdb.set_trace()

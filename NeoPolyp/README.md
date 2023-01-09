@@ -36,6 +36,11 @@ PraNet | Active Contour Loss | 0.9 | 0.823 | Continue training with best CE ckpt
 PraNet | Active Contour Loss | 0.893 | 0.78 | Continue training with best CE AC ckpt 400, last feature map + color jitter
 PraNet | Cross Entropy Loss | 0.895 | 0.795 | Continue training with best CE ckpt + color transfer 400, first feature map
 PraNet | Cross Entropy Loss | 0.88 | 0.838 | Continue training with best CE ckpt + color transfer 400, first feature map
+PraNet | Cross Entropy Loss | 0.911 | 0.856 | Continue training with best CE ckpt + color transfer 400, first feature map, postprocess
+PraNet Res2Net101 | Cross Entropy Loss | 0.877 | 0.794 | Start training with color transfer 400, last feature map, with color jitter
+PraNet Res2Net101 | Cross Entropy Loss | 0.892 | 0.817 | Start training with color transfer 400, first feature map, wo color jitter
+PraNet Res2Net101 | Cross Entropy Loss | 0.892 |0.803 | Continue training with color transfer 400, first feature map, with brightness jitter, postprocess
+PraNet Res2Net152 | Cross Entropy Loss | 0.888 | 0.78 | Start training with color transfer 400, first feature map, wo color jitter
 PraNet | Cross Entropy Loss | 0.902 | 0.788 | Continue training with best CE ckpt + color transfer 600, last feature map + color jitter
 PraNet | Cross Entropy Loss | 0.888 | 0.81 | Continue training with best CE 400 ckpt (0.838)+ color transfer 400, last feature map
 PraNet | Multi-Maps Cross Entropy Loss | 0.87 | 0.775 | Resize at 480 x 640, start training with color transfer 400, first feature map, compute loss across 4 feature maps (original paper)

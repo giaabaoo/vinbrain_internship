@@ -13,7 +13,7 @@ import argparse
 import cv2
 import albumentations as A
 import pandas as pd
-from utils.helper import get_args_parser, my_post_process
+from utils.helper import get_args_parser, refine_mask
 from utils.train_utils import prepare_architecture
 
 def evaluate(config, model, validation_loader):
@@ -25,6 +25,7 @@ def evaluate(config, model, validation_loader):
     with torch.no_grad():
         for sample in tqdm(validation_loader, desc="Evaluating", leave=False):
             images, masks = sample['image'], sample['mask']
+            
             if not config['transform']:
                 images = images.type(torch.FloatTensor)
 
@@ -37,8 +38,8 @@ def evaluate(config, model, validation_loader):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                # output  = output[0]
-                output  = output[-1]
+                output  = output[0]
+                # output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
                 
@@ -59,9 +60,12 @@ def evaluate(config, model, validation_loader):
             if predictions.shape != (height, width):
                 predictions = cv2.resize(predictions, dsize=(width, height), interpolation=cv2.INTER_NEAREST)
             
-            predictions = torch.from_numpy(np.array(predictions)).unsqueeze(0).to(config['device'])
             
-            # predictions = my_post_process(predictions)
+            # print("Evaluating on image ", sample['image_name'])
+            if config['refine_masks']:
+                predictions = refine_mask(sample['image_name'], predictions)
+                
+            predictions = torch.from_numpy(np.array(predictions)).unsqueeze(0).to(config['device'])
 
             dice_coef = compute_dice_coef(masks, predictions)
             F1_score = compute_F1(predictions, masks)
@@ -98,6 +102,6 @@ if __name__ == "__main__":
     model.to(config['device'])
     
     dice_coef, F1, IoU = evaluate(config, model, validation_loader)
-    print(f"Test. dice score: {dice_coef:.3f}")
+    # print(f"Test. dice score: {dice_coef:.3f}")
     print(f"Test. F1 score: {F1:.3f}")
     print(f"Test. IoU score: {IoU:.3f}")

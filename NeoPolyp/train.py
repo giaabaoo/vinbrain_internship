@@ -48,8 +48,8 @@ def train(config, model, training_loader, optimizer, criterion):
                 elif "neounet" in config['backbone']:
                     output = output[0]
                 elif "pranet" in config['backbone']:
-                    # output, output4, output3, output2  = output
-                    output5, output4, output3, output  = output
+                    output, output4, output3, output2  = output
+                    # output5, output4, output3, output  = output
                 elif "deeplabv3" in config['backbone']:
                     output = output['out']
                 
@@ -97,8 +97,8 @@ def train(config, model, training_loader, optimizer, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                # output, output4, output3, output2  = output
-                output5, output4, output3, output  = output
+                output, output4, output3, output2  = output
+                # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             
@@ -164,8 +164,8 @@ def evaluate(config, model, validation_loader, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                # output, output4, output3, output2  = output
-                output5, output4, output3, output  = output
+                output, output4, output3, output2  = output
+                # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             

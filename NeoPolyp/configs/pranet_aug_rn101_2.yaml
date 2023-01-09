@@ -8,7 +8,7 @@ positive_only: False
 image_height: 480
 image_width: 640
 
-batch_size: 16
+batch_size: 10
 loss_function: "CrossEntropyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
@@ -22,9 +22,9 @@ probability_correction_strategy: False
 refine_masks: True
 
 transform: True
-num_epochs: 50
+num_epochs: 20
 device: 'cuda'
 continue_training: True
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_continue.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug.pt"
-csv_name: "pranet_aug_postprocess"
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_rn101_2.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_rn101_2.pt"
+csv_name: "pranet_aug_rn101_2"

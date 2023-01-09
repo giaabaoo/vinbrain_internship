@@ -65,20 +65,40 @@ def mask2rgb(mask):
             
     return rgb
 
-def my_post_process(predictions):
-    pdb.set_trace()
-    # predictions = predictions.detach().cpu().numpy()
-    # predictions = mask2rgb(predictions)
-    # predictions = cv2.cvtColor(predictions, cv2.COLOR_RGB2GRAY)
+def refine_mask(image_name, predictions):    
+    rgbmask = mask2rgb(predictions)
+    bgrmask = cv2.cvtColor(rgbmask, cv2.COLOR_RGB2BGR)
+    gray_mask = cv2.cvtColor(bgrmask, cv2.COLOR_BGR2GRAY)
+    _, gray_mask = cv2.threshold(gray_mask, 0, 255, cv2.THRESH_BINARY)
     
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(gray_mask, 4, cv2.CV_32S)
+
+    # For each list of contour points...
+    for i in range(1, num_labels):
+        # Access the image pixels and create a 1D numpy array then add to list
+        pts = np.where(labels == i)
+        pts = list(zip(list(pts[0]),list(pts[1])))
     
-    # threshold = cv2.threshold(predictions, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1] 
-    
-    # analysis = cv2.connectedComponentsWithStats(threshold,
-    #                                         4,
-    #                                         cv2.CV_32S)
-    # (totalLabels, label_ids, values, centroid) = analysis
-    
+        ## count number of pixels in red and green labels
+        red_count, green_count = 0, 0
+        
+        for x, y in pts:
+            if predictions[x,y] == 1:
+                red_count += 1
+            elif predictions[x,y] == 2:
+                green_count += 1
+
+        # pdb.set_trace()
+        ## if red > green --> set all red
+        if red_count > green_count:
+            for x, y in pts:
+                predictions[x,y] = 1
+        else:
+            for x, y in pts:
+                predictions[x,y] = 2
+
+        # pdb.set_trace()
+
     return predictions
     
     return 

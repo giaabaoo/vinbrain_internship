@@ -5,13 +5,23 @@ import torch.utils.model_zoo as model_zoo
 import torch
 import torch.nn.functional as F
 
-__all__ = ['Res2Net', 'res2net50_v1b', 'res2net101_v1b', 'res2net50_v1b_26w_4s']
+__all__ = ['Res2Net', 'res2net50_v1b', 'res2net101_v1b', 'res2net50_v1b_26w_4s', 'Res2Net200_vd_26w_4s_ssld_pretrained']
 
 model_urls = {
     'res2net50_v1b_26w_4s': 'https://shanghuagao.oss-cn-beijing.aliyuncs.com/res2net/res2net50_v1b_26w_4s-3cf99910.pth',
     'res2net101_v1b_26w_4s': 'https://shanghuagao.oss-cn-beijing.aliyuncs.com/res2net/res2net101_v1b_26w_4s-0812c246.pth',
+    'Res2Net200_vd_26w_4s_ssld_pretrained': 'https://paddle-imagenet-models-name.bj.bcebos.com/Res2Net200_vd_26w_4s_ssld_pretrained.tar',
+    'Res2NeXt_DLA_60': 'https://1drv.ms/u/s!AkxDDnOtroRPcjxCM0kAYHEaEd0?e=9WrBpj',
+    'Res2Net_DLA_60': 'https://1drv.ms/u/s!AkxDDnOtroRPbWAqdcatece24vs?e=t3shXH'
 }
 
+### BAO: download weights at https://github.com/Res2Net/Res2Net-PretrainedModels then load the weights into model paths
+model_paths = {
+    'Res2Net200_vd_26w_4s_ssld_pretrained': '/home/dhgbao/.cache/torch/hub/checkpoints/Res2Net200_vd_26w_4s_ssld_pretrained.tar',
+    'Res2NeXt_DLA_60': '/home/dhgbao/.cache/torch/hub/checkpoints/res2next_dla60_4s-d327927b.pth',
+    'Res2Net_DLA_60': '/home/dhgbao/.cache/torch/hub/checkpoints/res2net_dla60_4s-d88db7f9.pth',
+    'res2net152_v1b_26w_4s': '/home/dhgbao/.cache/torch/hub/checkpoints/res2net152_v1b_26w_4s-52fe33d0.pth'
+}
 
 class Bottle2neck(nn.Module):
     expansion = 4
@@ -223,12 +233,42 @@ def res2net152_v1b_26w_4s(pretrained=False, **kwargs):
     """
     model = Res2Net(Bottle2neck, [3, 8, 36, 3], baseWidth=26, scale=4, **kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls['res2net152_v1b_26w_4s']))
+        model.load_state_dict(torch.load(model_paths['res2net152_v1b_26w_4s']))
     return model
 
+def Res2Net200_vd_26w_4s_ssld_pretrained(pretrained=False, **kwargs):
+    """Constructs a Res2Net-Res2Net200_vd_26w_4s_ssld_pretrained lib.
+    Args:
+        pretrained (bool): If True, returns a lib pre-trained on ImageNet
+    """
+    model = Res2Net(Bottle2neck, [3, 8, 36, 3], baseWidth=26, scale=4, **kwargs)
+    print(model_paths['Res2Net200_vd_26w_4s_ssld_pretrained'])
+    if pretrained:
+        model.load_state_dict(torch.load(model_paths['Res2Net200_vd_26w_4s_ssld_pretrained']))
+    return model
+
+def Res2NeXt_DLA_60(pretrained=False, **kwargs):
+    """Constructs a Res2Net-Res2Net200_vd_26w_4s_ssld_pretrained lib.
+    Args:
+        pretrained (bool): If True, returns a lib pre-trained on ImageNet
+    """
+    model = Res2Net(Bottle2neck, [3, 8, 36, 3], baseWidth=26, scale=4, **kwargs)
+    if pretrained:
+        model.load_state_dict(torch.load(model_paths['Res2NeXt_DLA_60']))
+    return model
+
+def Res2Net_DLA_60(pretrained=False, **kwargs):
+    """Constructs a Res2Net-Res2Net200_vd_26w_4s_ssld_pretrained lib.
+    Args:
+        pretrained (bool): If True, returns a lib pre-trained on ImageNet
+    """
+    model = Res2Net(Bottle2neck, [3, 8, 36, 3], baseWidth=26, scale=4, **kwargs)
+    if pretrained:
+        model.load_state_dict(torch.load(model_paths['Res2Net_DLA_60']))
+    return model
 
 if __name__ == '__main__':
     images = torch.rand(1, 3, 224, 224).cuda(0)
-    model = res2net50_v1b_26w_4s(pretrained=True)
+    model = res2net152_v1b_26w_4s(pretrained=True)
     model = model.cuda(0)
     print(model(images).size())

@@ -10,7 +10,7 @@ import argparse
 from tqdm import tqdm
 import pandas as pd
 import os
-from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize
+from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize, refine_mask
 from utils.train_utils import prepare_architecture
 import torch.nn.functional as F
 
@@ -35,6 +35,7 @@ def predict2submit(predict, class_id):
 def save_results(csv_name, output, image, image_name):
     output = mask2rgb(output)
     output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
+        
     cv2.imwrite(f"./results/{csv_name}/test_mask/{image_name}", output)
     
     blend = visualize(image, output)
@@ -48,25 +49,6 @@ def save_csv(image_name, output):
         string = predict2submit(mask, channel+1)
         strings.append(string)
     return ids, strings
-
-def mask_to_class(mask):
-    binary_mask = np.array(mask)
-    binary_mask = np.array(mask)
-    binary_mask = cv2.erode(binary_mask, np.ones((5, 5), np.uint8)) 
-    binary_mask[:,:,2] = 0
-    binary_mask = (binary_mask != 0).astype(np.uint8)
-    binary_mask *= 255
-    
-    rgb = np.array(binary_mask)
-    output_mask = np.zeros((rgb.shape[0], rgb.shape[1]))
-
-    for k,v in LABEL_TO_COLOR.items():
-        output_mask[np.all(rgb==v, axis=2)] = k
-        
-    output_mask = torch.from_numpy(output_mask)
-    output_mask = output_mask.type(torch.int64)
-    
-    return output_mask
 
 if __name__ == "__main__":
     
@@ -120,8 +102,8 @@ if __name__ == "__main__":
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                # output  = output[0]
-                output  = output[-1]
+                output  = output[0]
+                # output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
         
@@ -137,6 +119,11 @@ if __name__ == "__main__":
         prediction = torch.argmax(probs, dim=1)
         
         output = postprocess(prediction.cpu().numpy(), image)
+        
+        if config['refine_masks'] :
+            ### refine_mask by following the rule: 1 label per polyp only
+            output = refine_mask(image_name, output)
+        
         ids, strings = save_csv(image_name, output)
         save_results(csv_name, output, image, image_name)
 
