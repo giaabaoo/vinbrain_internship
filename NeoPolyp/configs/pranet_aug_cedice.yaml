@@ -23,7 +23,7 @@ probability_correction_strategy: False
 transform: True
 num_epochs: 60
 device: 'cuda'
-continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_cedice.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_cedice.pt"
-csv_name: "pranet_aug_cedice"
+continue_training: True
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_cedice_continue.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_cedice_continue.pt"
+csv_name: "pranet_aug_cedice_continue"

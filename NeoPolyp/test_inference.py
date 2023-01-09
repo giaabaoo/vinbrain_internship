@@ -120,8 +120,8 @@ if __name__ == "__main__":
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output, output4, output3, output2  = output
-                # output5, output4, output3, output  = output
+                # output  = output[0]
+                output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
         
@@ -135,8 +135,6 @@ if __name__ == "__main__":
             probs = torch.softmax(output, dim=1)
             
         prediction = torch.argmax(probs, dim=1)
-            
-        # pdb.set_trace()
         
         output = postprocess(prediction.cpu().numpy(), image)
         ids, strings = save_csv(image_name, output)

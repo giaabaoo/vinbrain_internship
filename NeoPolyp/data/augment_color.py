@@ -10,14 +10,14 @@ from tqdm import tqdm
 if __name__ == "__main__":
     train_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train"
     train_mask_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_mask"
-    train_aug_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_400"
-    train_aug_mask_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask_400"
+    train_aug_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_600"
+    train_aug_mask_folder = "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask_600"
     
     Path(train_aug_folder).mkdir(parents=True, exist_ok=True)
     Path(train_aug_mask_folder).mkdir(parents=True, exist_ok=True)
     
     all_image_names = os.listdir(train_folder)
-    k = len(all_image_names) * 40 // 100
+    k = len(all_image_names) * 60 // 100
     indicies = random.sample(range(len(all_image_names)), k)
     aug_image_names = [all_image_names[i] for i in indicies]
     

@@ -65,6 +65,23 @@ def mask2rgb(mask):
             
     return rgb
 
+def my_post_process(predictions):
+    pdb.set_trace()
+    # predictions = predictions.detach().cpu().numpy()
+    # predictions = mask2rgb(predictions)
+    # predictions = cv2.cvtColor(predictions, cv2.COLOR_RGB2GRAY)
+    
+    
+    # threshold = cv2.threshold(predictions, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1] 
+    
+    # analysis = cv2.connectedComponentsWithStats(threshold,
+    #                                         4,
+    #                                         cv2.CV_32S)
+    # (totalLabels, label_ids, values, centroid) = analysis
+    
+    return predictions
+    
+    return 
 def postprocess(prediction, image):
     height, width, _ = image.shape
     prediction = cv2.resize(prediction.squeeze(0), (width, height), 0, 0, interpolation=cv2.INTER_NEAREST)

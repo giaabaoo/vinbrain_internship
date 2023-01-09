@@ -13,7 +13,7 @@ import argparse
 import cv2
 import albumentations as A
 import pandas as pd
-from utils.helper import get_args_parser
+from utils.helper import get_args_parser, my_post_process
 from utils.train_utils import prepare_architecture
 
 def evaluate(config, model, validation_loader):
@@ -37,8 +37,8 @@ def evaluate(config, model, validation_loader):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output, output4, output3, output2  = output
-                # output5, output4, output3, output  = output
+                # output  = output[0]
+                output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
                 
@@ -60,6 +60,8 @@ def evaluate(config, model, validation_loader):
                 predictions = cv2.resize(predictions, dsize=(width, height), interpolation=cv2.INTER_NEAREST)
             
             predictions = torch.from_numpy(np.array(predictions)).unsqueeze(0).to(config['device'])
+            
+            # predictions = my_post_process(predictions)
 
             dice_coef = compute_dice_coef(masks, predictions)
             F1_score = compute_F1(predictions, masks)

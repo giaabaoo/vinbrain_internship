@@ -185,13 +185,13 @@ class ActiveContourLoss(nn.Module):
 class PraNetLoss(nn.Module):
     def __init__(self):
         super().__init__()
-    def forward(self, pred, mask):  
+    def forward(self, pred, mask, weights=[1,1]):  
         criterion = [nn.CrossEntropyLoss(), smp.losses.DiceLoss(mode='multiclass')]
         ce_loss = criterion[0](pred, mask)
         dice_loss = criterion[1](pred, mask)
 
         # loss =(ce_loss +  dice_loss).mean()
-        loss = ce_loss +  dice_loss
+        loss = weights[0] * ce_loss +  weights[1] * dice_loss
         return loss
     
 class MultiCELoss(nn.Module):

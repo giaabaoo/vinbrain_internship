@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate, VerticalFlip, RandomRotate90
+from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate, VerticalFlip, RandomRotate90, ColorJitter
 from albumentations.pytorch import ToTensorV2
 from dataset import NeoPolyp
 from torch import optim, nn
@@ -33,6 +33,7 @@ def apply_transform(config):
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
             HorizontalFlip(p=0.5),
             VerticalFlip(p=0.5),
+            ColorJitter (brightness=0.3, contrast=0.3, always_apply=False, p=0.5),
             # ShiftScaleRotate(
             #     shift_limit=0,  # no resizing
             #     scale_limit=0.1,

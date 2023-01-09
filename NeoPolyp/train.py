@@ -48,8 +48,8 @@ def train(config, model, training_loader, optimizer, criterion):
                 elif "neounet" in config['backbone']:
                     output = output[0]
                 elif "pranet" in config['backbone']:
-                    output, output4, output3, output2  = output
-                    # output5, output4, output3, output  = output
+                    # output, output4, output3, output2  = output
+                    output5, output4, output3, output  = output
                 elif "deeplabv3" in config['backbone']:
                     output = output['out']
                 
@@ -66,10 +66,10 @@ def train(config, model, training_loader, optimizer, criterion):
                     
                     loss = 0.4 * ce_loss + 0.6 * dice_loss
                 elif config['loss_function'] == 'PraNetLoss': 
-                    loss5 = criterion(output, masks)
-                    loss4 = criterion(output4, masks)
-                    loss3 = criterion(output3, masks)
-                    loss2 = criterion(output2, masks)
+                    loss5 = criterion(output5, masks, config['weights'])
+                    loss4 = criterion(output4, masks, config['weights'])
+                    loss3 = criterion(output3, masks, config['weights'])
+                    loss2 = criterion(output, masks, config['weights'])
                     loss = loss2 + loss3 + loss4 + loss5
                 else:
                     loss = criterion(output, masks)
@@ -97,8 +97,8 @@ def train(config, model, training_loader, optimizer, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output, output4, output3, output2  = output
-                # output5, output4, output3, output  = output
+                # output, output4, output3, output2  = output
+                output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             
@@ -115,10 +115,10 @@ def train(config, model, training_loader, optimizer, criterion):
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
             elif config['loss_function'] == 'PraNetLoss': 
-                loss5 = criterion(output, masks)
-                loss4 = criterion(output4, masks)
-                loss3 = criterion(output3, masks)
-                loss2 = criterion(output2, masks)
+                loss5 = criterion(output5, masks, config['weights'])
+                loss4 = criterion(output4, masks, config['weights'])
+                loss3 = criterion(output3, masks, config['weights'])
+                loss2 = criterion(output, masks, config['weights'])
                 loss = loss2 + loss3 + loss4 + loss5
             else:
                 loss = criterion(output, masks)
@@ -164,8 +164,8 @@ def evaluate(config, model, validation_loader, criterion):
             elif "neounet" in config['backbone']:
                 output = output[0]
             elif "pranet" in config['backbone']:
-                output, output4, output3, output2  = output
-                # output5, output4, output3, output  = output
+                # output, output4, output3, output2  = output
+                output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
             
@@ -182,10 +182,10 @@ def evaluate(config, model, validation_loader, criterion):
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
             elif config['loss_function'] == 'PraNetLoss': 
-                loss5 = criterion(output, masks)
-                loss4 = criterion(output4, masks)
-                loss3 = criterion(output3, masks)
-                loss2 = criterion(output2, masks)
+                loss5 = criterion(output5, masks, config['weights'])
+                loss4 = criterion(output4, masks, config['weights'])
+                loss3 = criterion(output3, masks, config['weights'])
+                loss2 = criterion(output, masks, config['weights'])
                 loss = loss2 + loss3 + loss4 + loss5
             else:
                 loss = criterion(output, masks)
