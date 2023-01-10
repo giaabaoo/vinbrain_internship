@@ -60,6 +60,8 @@ PraNet | Cross Entropy Loss | 0.834 | 0.73 | Start training with color transfer 
 SANet | Cross Entropy Loss | 0.904 | 0.814 | Continue training with best CE ckpt + color transfer
 SANet | Cross Entropy Loss | 0.88 | 0.775 | Continue training with best CE ckpt + color transfer 400
 
+For more details, refer to this [link](https://docs.google.com/spreadsheets/d/1iSvGNBwq1OicNJdAsUYEsGnScmvbrIdsWGNe16BHItU/edit?usp=sharing)
+
 ## DONE:
 #### 1. Prepare data
 - Retrieve data 
