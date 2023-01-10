@@ -18,6 +18,8 @@ backbone: "pranet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
 activation: 
+probability_correction_strategy: False
+refine_masks: True
 
 transform: True
 num_epochs: 50

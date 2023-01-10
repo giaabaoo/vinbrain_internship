@@ -33,7 +33,7 @@ def apply_transform(config):
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), p=1),
             HorizontalFlip(p=0.5),
             VerticalFlip(p=0.5),
-            ColorJitter(brightness=0.3, contrast=0, saturation=0, hue=0, p=0.5),
+            # ColorJitter(brightness=0.3, contrast=0, saturation=0, hue=0, p=0.5),
             # ShiftScaleRotate(
             #     shift_limit=0,  # no resizing
             #     scale_limit=0.1,
@@ -66,7 +66,7 @@ def prepare_objectives(config, model, training_loader):
     elif config['loss_function'] == 'smpDiceLoss':
         criterion = smp.losses.DiceLoss(mode='multiclass')
     elif config['loss_function'] == 'smpFocalLoss':
-        criterion = smp.losses.FocalLoss(mode='multiclass')
+        criterion = smp.losses.FocalLoss(gamma = 1.5, mode='multiclass')
     elif config['loss_function'] == 'smpTverskyLoss':
         criterion = smp.losses.TverskyLoss(mode='multiclass')
     elif config['loss_function'] == 'CrossEntropy_TverskyLoss':

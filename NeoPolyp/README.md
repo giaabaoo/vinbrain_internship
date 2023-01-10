@@ -33,12 +33,15 @@ Focal UNet | Focal Loss | 0.77 | 0.6 | Continue training
 **PraNet** | Cross Entropy Loss | 0.88 | 0.824 | Resize at 480 x 640, first feature map
 PraNet | Cross Entropy Loss | 0.89 | 0.825 | Continue training, first feature map
 PraNet | Active Contour Loss | 0.9 | 0.823 | Continue training with best CE ckpt, first feature map
+PraNet | Active Contour Loss | 0.91 | 0.84 | Continue training with best CE ckpt, first feature map, postprocess
 PraNet | Active Contour Loss | 0.893 | 0.78 | Continue training with best CE AC ckpt 400, last feature map + color jitter
 PraNet | Cross Entropy Loss | 0.895 | 0.795 | Continue training with best CE ckpt + color transfer 400, first feature map
 PraNet | Cross Entropy Loss | 0.88 | 0.838 | Continue training with best CE ckpt + color transfer 400, first feature map
 PraNet | Cross Entropy Loss | 0.911 | 0.856 | Continue training with best CE ckpt + color transfer 400, first feature map, postprocess
+PraNet | Focal Loss | 0.88 | 0.79 | Start training with color transfer 400, first feature map, postprocess
+PraNet | Focal Loss + Dice Loss | - | - | Start training with color transfer 400, first feature map, postprocess
 PraNet Res2Net101 | Cross Entropy Loss | 0.877 | 0.794 | Start training with color transfer 400, last feature map, with color jitter
-PraNet Res2Net101 | Cross Entropy Loss | 0.892 | 0.817 | Start training with color transfer 400, first feature map, wo color jitter
+PraNet Res2Net101 | Cross Entropy Loss | 0.892 | 0.817 | Start training with color transfer 400, first feature map, wo color jitter 
 PraNet Res2Net101 | Cross Entropy Loss | 0.892 |0.803 | Continue training with color transfer 400, first feature map, with brightness jitter, postprocess
 PraNet Res2Net152 | Cross Entropy Loss | 0.888 | 0.78 | Start training with color transfer 400, first feature map, wo color jitter
 PraNet | Cross Entropy Loss | 0.902 | 0.788 | Continue training with best CE ckpt + color transfer 600, last feature map + color jitter
@@ -49,7 +52,8 @@ PraNet | CE + Dice Loss | 0.916 | 0.83 | Resize at 480 x 640, start training wit
 PraNet | CE + Dice Loss | 0.917 | 0.825 | Continue training with color transfer 400, last feature map, compute loss across 4 feature maps (original paper)
 PraNet | CE + Dice Loss | 0.905 | 0.8 | Continue training with color transfer 400, last feature map, compute loss across 4 feature maps (original paper), color jittering
 PraNet | CE + Dice Loss | 0.917 | 0.82 | Continue resize at 480 x 640, start training with color transfer 400, first feature map, compute loss across 4 feature maps (original paper)
-PraNet | 0.4 * CE + 0.6 * Dice Loss | 0.885 | 0.786 | Start at 480 x 640, start training with color transfer 600, last feature map, compute loss across 4 feature maps (original paper)
+PraNet | CE + Dice Loss | 0.93 | 0.845 | Continue resize at 480 x 640, start training with color transfer 400, first feature map, compute loss across 4 feature maps (original paper), postprocess
+PraNet | 0.4 * CE + 0.6 * Dice Loss | 0.885 (0.912) | 0.786 (0.812)| Start at 480 x 640, start training with color transfer 600, last feature map, compute loss across 4 feature maps (original paper) (post-process)
 PraNet | Cross Entropy Loss | 0.87 | 0.78 | Start training with color transfer 400, last feature map
 PraNet | Cross Entropy Loss | 0.834 | 0.73 | Start training with color transfer 400 + size upsampling, first feature map
 **SANet** | Cross Entropy Loss | 0.87 | 0.76 | Resize at 480 x 640

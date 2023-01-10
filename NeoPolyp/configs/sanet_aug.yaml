@@ -17,6 +17,7 @@ T_mult: 2
 backbone: "sanet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 probability_correction_strategy: False
+refine_masks: True
 
 transform: True
 num_epochs: 50
