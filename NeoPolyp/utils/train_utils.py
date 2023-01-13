@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from albumentations import Compose, Resize, Normalize, HorizontalFlip, ShiftScaleRotate, VerticalFlip, RandomRotate90, ColorJitter, RandomBrightness, Sharpen
 from albumentations.pytorch import ToTensorV2
-from dataset import NeoPolyp
+from dataset import NeoPolyp, TGA_NeoPolyp
 from torch import optim, nn
 import segmentation_models_pytorch as smp
 import timm.optim
@@ -17,6 +17,7 @@ from networks.pranet.model import PraNet
 from networks.sanet.model import SANet
 from networks.polyp_pvt.pvt import PolypPVT
 from networks.swin.vision_transformer import SwinUnet
+from networks.tganet.model import TGAPolypSeg
 from torchvision.models.segmentation import deeplabv3_resnet101
 
 import ssl
@@ -53,8 +54,12 @@ def apply_transform(config):
     return train_transform, valid_transform
 
 def prepare_dataloaders(config, train_transform, valid_transform):
-    training_data = NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], transform=train_transform)
-    validating_data = NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
+    if "tganet" in config['backbone']:
+        training_data = TGA_NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], transform=train_transform)
+        validating_data = TGA_NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
+    else:
+        training_data = NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], transform=train_transform)
+        validating_data = NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
     
     training_loader = DataLoader(training_data, batch_size=config['batch_size'], shuffle=True)
     validation_loader = DataLoader(validating_data, batch_size=config['batch_size'], shuffle=True)
@@ -133,6 +138,8 @@ def prepare_architecture(config):
         model = PolypPVT(num_classes=len(config['classes']))
     elif "swin" in config['backbone']:
         model = SwinUnet(config['image_height'], num_classes=len(config['classes']))
+    elif "tganet" in config['backbone']:
+        model = TGAPolypSeg(num_classes=len(config['classes']))
     elif config['backbone'] != "None":
         model = smp.Unet(config['backbone'], encoder_weights=config['encoder_weights'],
                          in_channels=3, classes=len(config['classes']), activation=config['activation'])

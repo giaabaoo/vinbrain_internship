@@ -4,6 +4,7 @@ from PIL import Image
 import cv2
 import torch
 import pdb
+from skimage.measure import label, regionprops, find_contours
 
 LABEL_TO_COLOR = {0:[0,0,0], 1:[255,0,0], 2:[0,255,0], 3:[0,0,255]}
 
@@ -36,7 +37,6 @@ def mask_to_class(mask):
     
 def read_mask(mask):
         mask = np.array(mask)
-        # cv2.imwrite("./visualization/original.png", mask)
         output = np.zeros(mask.shape[:2])
         output = np.where(mask[...,0] >127 , 1, output)
         output = np.where(mask[...,1] >127 , 2, output)
@@ -135,3 +135,44 @@ def visualize(image, mask):
     blend_image = cv2.addWeighted(image, 0.5, mask, 0.5, 0.0)
 
     return blend_image
+
+def label_dictionary():
+    label_dict = {}
+    label_dict["polyp"] = ["one", "multiple", "small", "medium", "large"]
+    return label_dict
+
+""" Convert a mask to border image """
+def mask_to_border(mask):
+    h, w, _ = mask.shape
+    border = np.zeros((h, w))
+    
+    output = np.zeros(mask.shape[:2])
+    output = np.where(mask[...,0] >127 , 255, output)
+    output = np.where(mask[...,1] >127 , 255, output)
+        
+    contours = find_contours(output, 128)
+    for contour in contours:
+        for c in contour:
+            x = int(c[0])
+            y = int(c[1])
+            border[x][y] = 255
+            
+    return border
+
+""" Mask to bounding boxes """
+def mask_to_bbox(mask):
+    bboxes = []
+
+    mask = mask_to_border(mask)
+    lbl = label(mask)
+    props = regionprops(lbl)
+    for prop in props:
+        x1 = prop.bbox[1]
+        y1 = prop.bbox[0]
+
+        x2 = prop.bbox[3]
+        y2 = prop.bbox[2]
+
+        bboxes.append([x1, y1, x2, y2])
+
+    return bboxes

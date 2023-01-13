@@ -1,0 +1,30 @@
+root_train_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_400"
+root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask_400"
+root_valid_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid"
+root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid_mask"
+root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
+positive_only: False
+
+image_height: 480
+image_width: 480
+
+batch_size: 8
+loss_function: "CrossEntropyLoss"
+optimizer: "Nadam"
+learning_rate: 0.0001
+scheduler: 'CosineAnnealingWarmRestarts'
+T_mult: 2
+backbone: "tganet"
+classes: ['background', 'neoplastic', 'non-neoplastic']
+encoder_weights: 'imagenet'
+activation: 
+probability_correction_strategy: False
+refine_masks: True
+
+transform: True
+num_epochs: 50
+device: 'cuda'
+continue_training: False
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/tganet.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/tganet.pt"
+csv_name: "tganet"
