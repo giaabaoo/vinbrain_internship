@@ -42,6 +42,16 @@ def evaluate(config, model, validation_loader):
                 # output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
+            elif "polyp_pvt" in config['backbone']:
+                P1, P2 = output
+                res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+                output = res
+            elif "polyp_pvt_p1" == config['backbone']:
+                P1, P2 = output
+                output = P1
+            elif "polyp_pvt_p2" == config['backbone']:
+                P1, P2 = output
+                output = P2
                 
             if config['probability_correction_strategy']:
                 pred  = F.interpolate(output, size=(images.shape[-2], images.shape[-1]), mode='bilinear', align_corners=True)

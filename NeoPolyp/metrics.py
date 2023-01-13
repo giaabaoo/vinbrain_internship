@@ -15,6 +15,7 @@ def compute_dice_coef(y_true, y_pred, thr=0.5, dim=0, epsilon=0.001):
     
 
 def compute_F1(output, target):
+    # pdb.set_trace()
     tp, fp, fn, tn = smp.metrics.get_stats(output, target, mode='multiclass', num_classes=3)
     f1_score = smp.metrics.f1_score(tp, fp, fn, tn, reduction="macro")
     

@@ -71,9 +71,20 @@ def refine_mask(image_name, predictions):
     gray_mask = cv2.cvtColor(bgrmask, cv2.COLOR_BGR2GRAY)
     _, gray_mask = cv2.threshold(gray_mask, 0, 255, cv2.THRESH_BINARY)
     
-    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(gray_mask, 4, cv2.CV_32S)
+    # Fill small holes in each components
+    gray_mask_filled = gray_mask.copy()
+    h, w = gray_mask.shape[:2]
+    mask = np.zeros((h+2, w+2), np.uint8)
+    cv2.floodFill(gray_mask_filled, mask, (0,0), 255)
+    gray_mask_filled_inv = cv2.bitwise_not(gray_mask_filled)
+    im_out = gray_mask | gray_mask_filled_inv
+    # cv2.imwrite("./visualization/gray.png", gray_mask)
+    # cv2.imwrite("./visualization/gray_filled.png", gray_mask_filled)
+    # cv2.imwrite("./visualization/gray_filled_combine.png", im_out)
+    
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(im_out, 4, cv2.CV_32S)
 
-    # For each list of contour points...
+    # For each list of contour points, choose the prominent color and assign it to the whole contour 
     for i in range(1, num_labels):
         # Access the image pixels and create a 1D numpy array then add to list
         pts = np.where(labels == i)
@@ -101,7 +112,6 @@ def refine_mask(image_name, predictions):
 
     return predictions
     
-    return 
 def postprocess(prediction, image):
     height, width, _ = image.shape
     prediction = cv2.resize(prediction.squeeze(0), (width, height), 0, 0, interpolation=cv2.INTER_NEAREST)
@@ -109,14 +119,14 @@ def postprocess(prediction, image):
     return prediction
 
 
-def valid_postprocess(prediction, image):
-    prediction = mask2rgb(prediction).squeeze(0)
+# def valid_postprocess(prediction, image):
+#     # prediction = mask2rgb(prediction).squeeze(0)
     
-    height, width, _ = image.shape
-    prediction = cv2.resize(prediction, (width, height), 0, 0, interpolation=cv2.INTER_NEAREST)
-    prediction = cv2.cvtColor(prediction, cv2.COLOR_RGB2BGR)
+#     height, width, _ = image.shape
+#     prediction = cv2.resize(prediction, (width, height), 0, 0, interpolation=cv2.INTER_NEAREST)
+#     # prediction = cv2.cvtColor(prediction, cv2.COLOR_RGB2BGR)
     
-    return prediction
+#     return prediction
 
 
 def visualize(image, mask):

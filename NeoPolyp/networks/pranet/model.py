@@ -101,8 +101,8 @@ class PraNet(nn.Module):
         super(PraNet, self).__init__()
         # ---- ResNet Backbone ----
         # self.resnet = res2net152_v1b_26w_4s(pretrained=True)
-        # self.resnet = res2net101_v1b_26w_4s(pretrained=True)
-        self.resnet = res2net50_v1b_26w_4s(pretrained=True)
+        self.resnet = res2net101_v1b_26w_4s(pretrained=True)
+        # self.resnet = res2net50_v1b_26w_4s(pretrained=True)
         # ---- Receptive Field Block like module ----
         self.rfb2_1 = RFB_modified(512, channel)
         self.rfb3_1 = RFB_modified(1024, channel)
@@ -189,3 +189,4 @@ if __name__ == '__main__':
     input_tensor = torch.randn(1, 3, 352, 352).cuda()
 
     out = ras(input_tensor)
+    print(out[0].shape)

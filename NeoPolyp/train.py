@@ -52,6 +52,16 @@ def train(config, model, training_loader, optimizer, criterion):
                     # output5, output4, output3, output  = output
                 elif "deeplabv3" in config['backbone']:
                     output = output['out']
+                elif "polyp_pvt_p1" == config['backbone']:
+                    P1, P2 = output
+                    output = P1
+                elif "polyp_pvt_p2" == config['backbone']:
+                    P1, P2 = output
+                    output = P2
+                elif "polyp_pvt" == config['backbone']:
+                    P1, P2 = output
+                    res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+                    output = res
                 
                 if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                     ce_loss = criterion[0](output, masks)
@@ -65,12 +75,23 @@ def train(config, model, training_loader, optimizer, criterion):
                     dice_loss = criterion[1](output, masks)
                     
                     loss = 0.4 * ce_loss + 0.6 * dice_loss
+                elif config['loss_function'] == 'FocalDiceLoss':
+                    focal_loss = criterion[0](output, masks)
+                    dice_loss = criterion[1](output, masks)
+                    w1, w2 = config['weights']
+                    
+                    loss = w1 * focal_loss + w2 * dice_loss
                 elif config['loss_function'] == 'PraNetLoss': 
                     loss5 = criterion(output5, masks, config['weights'])
                     loss4 = criterion(output4, masks, config['weights'])
                     loss3 = criterion(output3, masks, config['weights'])
                     loss2 = criterion(output, masks, config['weights'])
                     loss = loss2 + loss3 + loss4 + loss5
+                elif "polyp_pvt" == config['backbone']:
+                    loss_P1 = criterion(P1, masks)
+                    loss_P2 = criterion(P2, masks)
+                    
+                    loss = loss_P1 + loss_P2
                 else:
                     loss = criterion(output, masks)
                 loss.backward()
@@ -101,7 +122,18 @@ def train(config, model, training_loader, optimizer, criterion):
                 # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
+            elif "polyp_pvt" in config['backbone']:
+                P1, P2 = output
+                res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+                output = res
+            elif "polyp_pvt_p1" == config['backbone']:
+                P1, P2 = output
+                output = P1
             
+            elif "polyp_pvt_p2" == config['backbone']:
+                P1, P2 = output
+                output = P2
+                    
             if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                 ce_loss = criterion[0](output, masks)
                 tversky_loss = criterion[1](output, masks)
@@ -114,12 +146,23 @@ def train(config, model, training_loader, optimizer, criterion):
                 dice_loss = criterion[1](output, masks)
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
+            elif config['loss_function'] == 'FocalDiceLoss':
+                focal_loss = criterion[0](output, masks)
+                dice_loss = criterion[1](output, masks)
+                w1, w2 = config['weights']
+                
+                loss = w1 * focal_loss + w2 * dice_loss
             elif config['loss_function'] == 'PraNetLoss': 
                 loss5 = criterion(output5, masks, config['weights'])
                 loss4 = criterion(output4, masks, config['weights'])
                 loss3 = criterion(output3, masks, config['weights'])
                 loss2 = criterion(output, masks, config['weights'])
                 loss = loss2 + loss3 + loss4 + loss5
+            elif "polyp_pvt" == config['backbone']:
+                loss_P1 = criterion(P1, masks)
+                loss_P2 = criterion(P2, masks)
+                
+                loss = loss_P1 + loss_P2
             else:
                 loss = criterion(output, masks)
 
@@ -156,7 +199,7 @@ def evaluate(config, model, validation_loader, criterion):
             images, masks = images.to(
                 config['device']), masks.to(config['device'])
 
-           
+
             output = model(images)  # forward
             
             if "blazeneo" in config['backbone']:
@@ -168,7 +211,17 @@ def evaluate(config, model, validation_loader, criterion):
                 # output5, output4, output3, output  = output
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
-            
+            elif "polyp_pvt" in config['backbone']:
+                P1, P2 = output
+                res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+                output = res
+            elif "polyp_pvt_p1" == config['backbone']:
+                P1, P2 = output
+                output = P1
+            elif "polyp_pvt_p2" == config['backbone']:
+                P1, P2 = output
+                output = P2
+                
             if config['loss_function'] == 'CrossEntropy_TverskyLoss':
                 ce_loss = criterion[0](output, masks)
                 tversky_loss = criterion[1](output, masks)
@@ -181,12 +234,23 @@ def evaluate(config, model, validation_loader, criterion):
                 dice_loss = criterion[1](output, masks)
                 
                 loss = 0.4 * ce_loss + 0.6 * dice_loss
+            elif config['loss_function'] == 'FocalDiceLoss':
+                focal_loss = criterion[0](output, masks)
+                dice_loss = criterion[1](output, masks)
+                w1, w2 = config['weights']
+                
+                loss = w1 * focal_loss + w2 * dice_loss
             elif config['loss_function'] == 'PraNetLoss': 
                 loss5 = criterion(output5, masks, config['weights'])
                 loss4 = criterion(output4, masks, config['weights'])
                 loss3 = criterion(output3, masks, config['weights'])
                 loss2 = criterion(output, masks, config['weights'])
                 loss = loss2 + loss3 + loss4 + loss5
+            elif "polyp_pvt" == config['backbone']:
+                loss_P1 = criterion(P1, masks)
+                loss_P2 = criterion(P2, masks)
+                
+                loss = loss_P1 + loss_P2
             else:
                 loss = criterion(output, masks)
             

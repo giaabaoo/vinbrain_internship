@@ -9,7 +9,7 @@ image_height: 480
 image_width: 640
 
 batch_size: 16
-loss_function: "CrossEntropyLoss"
+loss_function: "FocalDiceLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
 scheduler: 'CosineAnnealingWarmRestarts'
@@ -20,11 +20,12 @@ encoder_weights: 'imagenet'
 activation: 
 probability_correction_strategy: False
 refine_masks: True
+weights: [0.3,0.7]
 
 transform: True
 num_epochs: 50
 device: 'cuda'
-continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_rn101.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_rn101.pt"
-csv_name: "pranet_aug_rn101"
+continue_training: True
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_focaldice.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/pranet_aug_focaldice.pt"
+csv_name: "pranet_aug_focaldice"

@@ -200,5 +200,4 @@ class MultiCELoss(nn.Module):
     def forward(self, pred, mask):  
         criterion = nn.CrossEntropyLoss()
         ce_loss = criterion(pred, mask)
-        loss = ce_loss
-        return loss
+        return ce_loss

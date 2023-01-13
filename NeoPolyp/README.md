@@ -60,13 +60,14 @@ PraNet | Cross Entropy Loss | 0.834 | 0.73 | Start training with color transfer 
 SANet | Cross Entropy Loss | 0.904 | 0.814 | Continue training with best CE ckpt + color transfer
 SANet | Cross Entropy Loss | 0.88 | 0.775 | Continue training with best CE ckpt + color transfer 400
 
-For more details, refer to this [link](https://docs.google.com/spreadsheets/d/1iSvGNBwq1OicNJdAsUYEsGnScmvbrIdsWGNe16BHItU/edit?usp=sharing)
+For more details, refer to this [link](https://docs.google.com/spreadsheets/d/1iSvGNBwq1OicNJdAsUYEsGnScmvbrIdsWGNe16BHItU/edit?usp=sharing).
 
 ## DONE:
 #### 1. Prepare data
 - Retrieve data 
 - Understand competition structure —> Train test split into image sub-folders
 - Visualize masks
+- Augmentation by using color transfer
 
 #### 2. Build a full pipeline 
 - DataLoader: generate {image, mask} pairs by eroding and binarizing mask's labels + data augmentation
@@ -77,9 +78,11 @@ For more details, refer to this [link](https://docs.google.com/spreadsheets/d/1i
 - Training and evaluation using dice score and cross-entropy loss
 - Inference module
 - Submission module
+- Post-processing to refine masks
 
 #### 3. Others
 - Final evaluation on full size image with F1 score and IoU score
+- Employ other segmentation networks
 
 
 ## PLAN

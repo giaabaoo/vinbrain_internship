@@ -3,15 +3,15 @@ import cv2
 import yaml
 import torch
 import pdb
-from albumentations import (Normalize, Resize, Compose)
+from albumentations import (Normalize, Resize, Compose, Sharpen, RandomBrightness)
 from albumentations.pytorch import ToTensorV2
-from metrics import compute_dice_coef
+from metrics import compute_dice_coef, compute_F1
 from pathlib import Path
 import argparse
 from tqdm import tqdm
 import os
 from PIL import Image, ImageDraw, ImageFont
-from utils.helper import get_concat_h, get_args_parser, valid_postprocess, visualize, read_mask, refine_mask
+from utils.helper import get_concat_h, get_args_parser, postprocess, visualize, read_mask, refine_mask, mask2rgb
 from utils.train_utils import prepare_architecture
 import torch.nn.functional as F
 
@@ -44,8 +44,8 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
     
-    # path = config['root_valid_image_path']
-    path = "./example_data/valid"
+    path = config['root_valid_image_path']
+    # path = "./example_data/valid"
     # Inference on all images
     for image_name in tqdm(os.listdir(path)):
         image = cv2.imread(os.path.join(path, image_name))
@@ -59,7 +59,7 @@ if __name__ == "__main__":
         
         augmented = transform(image=image, mask=mask)
         image_transform = augmented['image']
-        mask = augmented['mask']
+        # mask = augmented['mask']
 
         mask = read_mask(mask).to(config['device'])
         
@@ -78,6 +78,16 @@ if __name__ == "__main__":
                 # output  = output[-1]
             elif "deeplabv3" in config['backbone']:
                 output = output['out']
+            elif "polyp_pvt" == config['backbone']:
+                P1, P2 = output
+                res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+                output = res
+            elif "polyp_pvt_p1" == config['backbone']:
+                P1, P2 = output
+                output = P1
+            elif "polyp_pvt_p2" == config['backbone']:
+                P1, P2 = output
+                output = P2
         
         if config['probability_correction_strategy']:
             pred  = F.interpolate(output, size=(image_transform.shape[-2], image_transform.shape[-1]), mode='bilinear', align_corners=True)
@@ -90,12 +100,17 @@ if __name__ == "__main__":
             
         prediction = torch.argmax(probs, dim=1)
         
-        
-        output = valid_postprocess(prediction.cpu().numpy(), image)
+        # pdb.set_trace()
+        output = postprocess(prediction.cpu().numpy(), image)
         
         ### refine_mask by following the rule: 1 label per polyp only
-        output = refine_mask(image_name, output)
-        dice_coef = compute_dice_coef(prediction, mask).cpu().numpy()
+        if config['refine_masks']:
+            output = refine_mask(image_name, output)
+        
+        output = torch.from_numpy(np.array(output)).to(config['device'])
+        dice_coef = compute_F1(output, mask).cpu().numpy()
+        output = mask2rgb(output.cpu().numpy())
+        output = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
         
         cv2.imwrite(f"./results/{backbone}/valid_mask/{image_name}", output)
         # pdb.set_trace()

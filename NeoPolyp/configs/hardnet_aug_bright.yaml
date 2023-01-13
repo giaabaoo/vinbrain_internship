@@ -1,5 +1,5 @@
-root_train_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train"
-root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_mask"
+root_train_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_400"
+root_train_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/train_aug_mask_400"
 root_valid_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid"
 root_valid_label_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/valid_mask"
 root_test_image_path: "/home/dhgbao/VinBrain/assignments/dataset/NeoPolyp/split/test"
@@ -8,15 +8,13 @@ positive_only: False
 image_height: 480
 image_width: 640
 
-batch_size: 8
+batch_size: 10
 loss_function: "CrossEntropyLoss"
 optimizer: "Nadam"
 learning_rate: 0.0001
-scheduler: 'CosineAnnealingLR'
-T_max: 10
-step_size: 30
-gamma: 0.1
-backbone: "neounet"
+scheduler: 'CosineAnnealingWarmRestarts'
+T_mult: 2
+backbone: "hardnet"
 classes: ['background', 'neoplastic', 'non-neoplastic']
 encoder_weights: 'imagenet'
 activation: 
@@ -26,7 +24,7 @@ refine_masks: True
 transform: True
 num_epochs: 50
 device: 'cuda'
-continue_training: False
-trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet.pt"
-save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/neounet.pt"
-csv_name: "neounet"
+continue_training: True
+trained_weights: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/hardnet.pt"
+save_checkpoint: "/home/dhgbao/VinBrain/assignments/vinbrain_internship/NeoPolyp/checkpoints/hardnet_aug_bright.pt"
+csv_name: "hardnet_aug_bright"
