@@ -37,5 +37,4 @@ if __name__ == "__main__":
 
     trainer = pl.Trainer(**PARAMS)
 
-
     trainer.fit(classifier, train_dataloader, valid_dataloader)

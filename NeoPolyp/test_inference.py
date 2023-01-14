@@ -9,8 +9,9 @@ from pathlib import Path
 import argparse
 from tqdm import tqdm
 import pandas as pd
+from utils.TGANet.text2embed import Text2Embed
 import os
-from utils.helper import mask2rgb, get_concat_h, get_args_parser, postprocess, visualize, refine_mask
+from utils.helper import mask2rgb, label_dictionary, get_args_parser, postprocess, visualize, refine_mask
 from utils.train_utils import prepare_architecture
 import torch.nn.functional as F
 
@@ -50,9 +51,63 @@ def save_csv(image_name, output):
         strings.append(string)
     return ids, strings
 
-if __name__ == "__main__":
-    
+def tga_inference(image_transform, config):
+    model.eval()
 
+    with torch.no_grad():
+        if not config['transform']:
+            image_transform = image_transform.type(torch.FloatTensor)
+        image_transform = image_transform.unsqueeze(0).to(config['device'])
+        
+        text_classes = []
+        label_dict = label_dictionary()
+        words = label_dict["polyp"]
+        embed = Text2Embed()
+        for word in words:
+            word_embed = embed.to_embed(word)[0]
+            text_classes.append(word_embed)
+        text_classes = np.array(text_classes)
+        text_classes = torch.from_numpy(text_classes).to(config['device'])
+        
+        p1, p2, p3 = model(image_transform, text_classes) 
+        p2 = torch.softmax(p2, dim=1)
+        p3 = torch.softmax(p3, dim=1)
+        output = p1
+            
+    return output
+
+def default_inference(image_transform, config):
+    model.eval()
+
+    with torch.no_grad():
+        if not config['transform']:
+            image_transform = image_transform.type(torch.FloatTensor)
+        image_transform = image_transform.unsqueeze(0).to(config['device'])
+
+        output = model(image_transform)
+        if "blazeneo" in config['backbone']:
+            output = output[1]
+        elif "neounet" in config['backbone']:
+            output = output[0]
+        elif "pranet" in config['backbone']:
+            output  = output[0]
+            # output  = output[-1]
+        elif "deeplabv3" in config['backbone']:
+            output = output['out']
+        elif "polyp_pvt" in config['backbone']:
+            P1, P2 = output
+            res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
+            output = res
+        elif "polyp_pvt_p1" == config['backbone']:
+            P1, P2 = output
+            output = P1
+        elif "polyp_pvt_p2" == config['backbone']:
+            P1, P2 = output
+            output = P2
+            
+    return output
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "NeoPolyp inference script", parents=[get_args_parser()])
     args = parser.parse_args()
@@ -86,37 +141,14 @@ if __name__ == "__main__":
         image = cv2.imread(os.path.join(path, image_name))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         height, width, _ = image.shape
-        model.eval()
-                
         augmented = transform(image=image)
         image_transform = augmented['image']
         
-        with torch.no_grad():
-            if not config['transform']:
-                image_transform = image_transform.type(torch.FloatTensor)
-            image_transform = image_transform.unsqueeze(0).to(config['device'])
-
-            output = model(image_transform)
-            if "blazeneo" in config['backbone']:
-                output = output[1]
-            elif "neounet" in config['backbone']:
-                output = output[0]
-            elif "pranet" in config['backbone']:
-                output  = output[0]
-                # output  = output[-1]
-            elif "deeplabv3" in config['backbone']:
-                output = output['out']
-            elif "polyp_pvt" in config['backbone']:
-                P1, P2 = output
-                res = F.interpolate(P1 + P2 , size=(config['image_height'], config['image_width']), mode='bilinear', align_corners=False)
-                output = res
-            elif "polyp_pvt_p1" == config['backbone']:
-                P1, P2 = output
-                output = P1
-            elif "polyp_pvt_p2" == config['backbone']:
-                P1, P2 = output
-                output = P2
-                    
+        if "tganet" in config['backbone']:
+            output = tga_inference(image_transform, config)
+        else:
+            output = default_inference(image_transform, config)     
+                           
         if config['probability_correction_strategy']:
             pred  = F.interpolate(output, size=(image_transform.shape[-2], image_transform.shape[-1]), mode='bilinear', align_corners=True)
             for i in range(3):

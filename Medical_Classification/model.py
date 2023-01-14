@@ -9,7 +9,6 @@ from metrics import accuracy, f1_score
 
 
 class Net(nn.Module):
-
     def __init__(self):
         super().__init__()
 

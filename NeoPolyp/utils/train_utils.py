@@ -55,8 +55,8 @@ def apply_transform(config):
 
 def prepare_dataloaders(config, train_transform, valid_transform):
     if "tganet" in config['backbone']:
-        training_data = TGA_NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], transform=train_transform)
-        validating_data = TGA_NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
+        training_data = TGA_NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], phase='train', transform=train_transform)
+        validating_data = TGA_NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], phase='train', transform=valid_transform)
     else:
         training_data = NeoPolyp(config['root_train_image_path'], config['root_train_label_path'], transform=train_transform)
         validating_data = NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)

@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 import yaml
-from dataset import EvalNeoPolyp
+from dataset import EvalNeoPolyp, TGA_NeoPolyp
 import torch.nn.functional as F
 from tqdm import tqdm
 import pdb
@@ -11,8 +11,6 @@ from albumentations import (Normalize, Resize, Compose)
 from albumentations.pytorch import ToTensorV2
 import argparse
 import cv2
-import albumentations as A
-import pandas as pd
 from utils.helper import get_args_parser, refine_mask
 from utils.train_utils import prepare_architecture
 
@@ -86,6 +84,57 @@ def evaluate(config, model, validation_loader):
 
     return np.mean(dice_coef_list), np.mean(F1_list), np.mean(IoU_list)
 
+def tga_evaluate(config, model, validation_loader):
+    model.eval()
+    dice_coef_list = []
+    F1_list = []
+    IoU_list = []
+
+    with torch.no_grad():
+        for sample in tqdm(validation_loader, desc="Evaluating", leave=False):
+            images, text_classes = sample['image'], sample['text_classes']
+            masks, num_polyps, polyp_sizes = sample['mask'], sample['num_polyps'], sample['polyp_sizes']
+            images, text_classes = images.to(config['device']), text_classes.to(config['device'])
+            masks, num_polyps, polyp_sizes = masks.to(config['device']), num_polyps.to(config['device']), polyp_sizes.to(config['device'])
+
+            p1, p2, p3 = model(images, text_classes)  # forward
+            p2 = torch.softmax(p2, dim=1)
+            p3 = torch.softmax(p3, dim=1)
+            output = p1
+                
+            if config['probability_correction_strategy']:
+                pred  = F.interpolate(output, size=(images.shape[-2], images.shape[-1]), mode='bilinear', align_corners=True)
+                for i in range(3):
+                    pred[:,i,:,:][torch.where(pred[:,i,:,:]>0)] /= (pred[:,i,:,:]>0).float().mean()
+                    pred[:,i,:,:][torch.where(pred[:,i,:,:]<0)] /= (pred[:,i,:,:]<0).float().mean()
+                probs = torch.softmax(pred, dim=1)
+            else:
+                probs = torch.softmax(output, dim=1)
+                
+            predictions = torch.argmax(probs, dim=1)
+            predictions = predictions.detach().cpu().numpy()[0,:,:]
+                
+            height, width = masks.shape[-2], masks.shape[-1]
+
+            if predictions.shape != (height, width):
+                predictions = cv2.resize(predictions, dsize=(width, height), interpolation=cv2.INTER_NEAREST)
+            
+            
+            # print("Evaluating on image ", sample['image_name'])
+            if config['refine_masks']:
+                predictions = refine_mask(sample['image_name'], predictions)
+                
+            predictions = torch.from_numpy(np.array(predictions)).unsqueeze(0).to(config['device'])
+
+            dice_coef = compute_dice_coef(masks, predictions)
+            F1_score = compute_F1(predictions, masks)
+            IoU_score = compute_IoU(predictions, masks)
+            dice_coef_list.append(dice_coef.cpu().numpy())
+            F1_list.append(F1_score.cpu().numpy())
+            IoU_list.append(IoU_score.cpu().numpy())
+
+    return np.mean(dice_coef_list), np.mean(F1_list), np.mean(IoU_list)
+
 if __name__ == "__main__":
     # Evaluating on batch size 1 because of different sizes in the test set
     parser = argparse.ArgumentParser("NeoPolyp evaluation script", parents=[get_args_parser()])
@@ -103,15 +152,20 @@ if __name__ == "__main__":
     ])
     
     model = prepare_architecture(config)
-    
-    validating_data = EvalNeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
+    if "tganet" in config['backbone']:
+        validating_data = TGA_NeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], phase ='eval', transform=valid_transform)
+    else:
+        validating_data = EvalNeoPolyp(config['root_valid_image_path'], config['root_valid_label_path'], transform=valid_transform)
     validation_loader = DataLoader(validating_data, batch_size=1, shuffle=True)
 
     print("Evaluating using ", weights_path)
     model.load_state_dict(torch.load(weights_path)['model_state_dict'])
     model.to(config['device'])
     
-    dice_coef, F1, IoU = evaluate(config, model, validation_loader)
+    if "tganet" in config['backbone']:
+        dice_coef, F1, IoU = tga_evaluate(config, model, validation_loader)
+    else:
+        dice_coef, F1, IoU = evaluate(config, model, validation_loader)
     # print(f"Test. dice score: {dice_coef:.3f}")
     print(f"Test. F1 score: {F1:.3f}")
     print(f"Test. IoU score: {IoU:.3f}")

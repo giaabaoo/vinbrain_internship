@@ -166,7 +166,7 @@ class EvalNeoPolyp(Dataset):
 
 
 class TGA_NeoPolyp(Dataset):
-    def __init__(self, root_image_path, root_label_path, transform=None):
+    def __init__(self, root_image_path, root_label_path, phase, transform=None):
         self.root_image_path = root_image_path
         self.root_label_path = root_label_path
         self.transform = transform
@@ -175,6 +175,7 @@ class TGA_NeoPolyp(Dataset):
         self.label_names = os.listdir(root_label_path)
         label_dict = label_dictionary()
         self.text_label_path = len(self.image_names) * [label_dict["polyp"]]
+        self.phase = phase
 
         self.embed = Text2Embed()
 
@@ -194,9 +195,13 @@ class TGA_NeoPolyp(Dataset):
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2RGB)
 
         if self.transform:
-            augmented = self.transform(image=image, mask=mask)
-            image = augmented['image']
-            mask = augmented['mask']
+            if self.phase == 'train':
+                augmented = self.transform(image=image, mask=mask)
+                image = augmented['image']
+                mask = augmented['mask']
+            elif self.phase == 'eval':
+                augmented = self.transform(image=image)
+                image = augmented['image']
         
         """ Mask to Textual information """
         num_polyps, polyp_sizes = self.mask_to_text(mask)
